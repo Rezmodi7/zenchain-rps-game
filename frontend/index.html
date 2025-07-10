@@ -1,1 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenChain Rock-Paper-Scissors</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ZenChain Rock-Paper-Scissors</h1>
+        <div id="walletInfo" class="info-box">
+            <p>Wallet Status: <span id="walletStatus">Not Connected</span></p>
+            <p>Account: <span id="accountAddress">N/A</span></p>
+            <p>Balance: <span id="accountBalance">N/A</span> ZTC</p>
+            <button id="connectWalletBtn">Connect Wallet</button>
+        </div>
 
+        <div id="gameControls" class="game-box" style="display: none;">
+            <h2>Start a New Game</h2>
+            <p>Minimum Bet: <span id="minBetDisplay">5</span> ZTC</p>
+            <label for="betAmount">Your Bet (ZTC):</label>
+            <input type="number" id="betAmount" value="5" min="5" step="1">
+            <button id="startGameBtn">Start Game</button>
+
+            <h2 id="makeChoiceHeading" style="display: none;">Make Your Choice</h2>
+            <div id="choiceButtons" class="choice-buttons" style="display: none;">
+                <button id="rockBtn">✊ Rock</button>
+                <button id="paperBtn">✋ Paper</button>
+                <button id="scissorsBtn">✌️ Scissors</button>
+            </div>
+
+            <div id="gameStatus" class="info-box">
+                <p>Status: <span id="statusMessage">Connect wallet to start.</span></p>
+                <p id="playerChoiceDisplay" style="display: none;">You chose: </p>
+                <p id="botChoiceDisplay" style="display: none;">Bot chose: </p>
+                <p id="resultDisplay" style="display: none;">Result: </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script> 
+    <script src="script.js"></script>
+</body>
+</html>
