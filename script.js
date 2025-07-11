@@ -1,6 +1,5 @@
-const contractAddress = "0xecda4696f2Bf39693B5E59F0d78a8B3975A7B10a";
-
-const contractABI = [
+const CONTRACT_ADDRESS = "0xecda4696f2Bf39693B5E59F0d78a8B3975A7B10a";
+const CONTRACT_ABI = [
   { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
   { "anonymous": false, "inputs": [
     { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
@@ -41,119 +40,384 @@ const contractABI = [
   { "inputs": [], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
 ];
 
-window.addEventListener("DOMContentLoaded", async () => {
-  const provider = window.ethereum
-    ? new ethers.providers.Web3Provider(window.ethereum, "any")
-    : null;
 
-  if (!provider) {
-    alert("MetaMask not detected. Please install it to continue.");
-    return;
-  }
+// Global variables for ethers and contract instances
+let provider;
+let signer;
+let contract;
+let readOnlyContract; // For view functions before connecting wallet
+let currentAccount = null;
 
-  let signer, contract, userAddress;
 
-  const walletStatus = document.getElementById("walletStatus");
-  const accountAddress = document.getElementById("accountAddress");
-  const accountBalance = document.getElementById("accountBalance");
-  const connectWalletBtn = document.getElementById("connectWalletBtn");
-  const startGameBtn = document.getElementById("startGameBtn");
-  const betAmountInput = document.getElementById("betAmount");
+// DOM Elements
+const walletStatus = document.getElementById("walletStatus");
+const accountAddress = document.getElementById("accountAddress");
+const accountBalance = document.getElementById("accountBalance");
+const connectWalletBtn = document.getElementById("connectWalletBtn");
+const startGameBtn = document.getElementById("startGameBtn");
+const betAmountInput = document.getElementById("betAmount");
+const gameControls = document.getElementById("gameControls");
+const makeChoiceHeading = document.getElementById("makeChoiceHeading");
+const choiceButtons = document.getElementById("choiceButtons");
+const rockBtn = document.getElementById("rockBtn");
+const paperBtn = document.getElementById("paperBtn");
+const scissorsBtn = document.getElementById("scissorsBtn");
+const statusMessage = document.getElementById("statusMessage");
+const playerChoiceDisplay = document.getElementById("playerChoiceDisplay");
+const botChoiceDisplay = document.getElementById("botChoiceDisplay");
+const resultDisplay = document.getElementById("resultDisplay");
+const minBetDisplay = document.getElementById("minBetDisplay");
 
-  const gameControls = document.getElementById("gameControls");
-  const makeChoiceHeading = document.getElementById("makeChoiceHeading");
-  const choiceButtons = document.getElementById("choiceButtons");
-  const rockBtn = document.getElementById("rockBtn");
-  const paperBtn = document.getElementById("paperBtn");
-  const scissorsBtn = document.getElementById("scissorsBtn");
+// Game Choice Mapping
+const CHOICES = {
+    0: "None",
+    1: "Rock",
+    2: "Paper",
+    3: "Scissors"
+};
 
-  const statusMessage = document.getElementById("statusMessage");
-  const playerChoiceDisplay = document.getElementById("playerChoiceDisplay");
-  const botChoiceDisplay = document.getElementById("botChoiceDisplay");
-  const resultDisplay = document.getElementById("resultDisplay");
+// Helper function to convert Wei to ZTC
+function weiToZTC(wei) {
+    if (!wei) return "0";
+    return ethers.utils.formatEther(wei);
+}
 
-  connectWalletBtn.addEventListener("click", async () => {
-    try {
-      await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
-      userAddress = await signer.getAddress();
-      contract = new ethers.Contract(contractAddress, contractABI, signer);
+// Function to initialize DApp state and check for MetaMask
+async function initDapp() {
+    console.log("Initializing DApp...");
+    if (typeof window.ethereum !== 'undefined') {
+        // Give MetaMask a moment to inject and become ready
+        // This is crucial for some mobile browsers
+        await new Promise(resolve => setTimeout(resolve, 300)); 
+        
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        readOnlyContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider); // Initialize read-only contract early
 
-      const balance = await provider.getBalance(userAddress);
-      const formattedBalance = ethers.utils.formatEther(balance);
+        walletStatus.textContent = "MetaMask Detected";
+        connectWalletBtn.style.display = "block";
+        console.log("MetaMask detected. Ready to connect.");
 
-      walletStatus.textContent = "Connected";
-      accountAddress.textContent = userAddress;
-      accountBalance.textContent = `${parseFloat(formattedBalance).toFixed(4)} ZTC`;
+        // Try to pre-connect if already authorized
+        try {
+            const accounts = await provider.listAccounts();
+            if (accounts.length > 0) {
+                console.log("Accounts already connected:", accounts[0]);
+                await connectWallet(accounts[0]); // Connect with the first account
+            } else {
+                console.log("No accounts pre-connected.");
+            }
+        } catch (error) {
+            console.error("Error checking pre-connected accounts:", error);
+        }
 
-      gameControls.style.display = "block";
-      statusMessage.textContent = "Wallet connected. Ready to play!";
-    } catch (err) {
-      alert("Wallet connection failed: " + err.message);
+        await updateMinBet(); // Display minBet even before wallet is connected
+    } else {
+        walletStatus.textContent = "MetaMask not detected. Please install MetaMask to play.";
+        connectWalletBtn.style.display = "none";
+        statusMessage.textContent = "MetaMask is required to play.";
+        console.log("MetaMask not detected.");
     }
-  });
+}
 
-  startGameBtn.addEventListener("click", async () => {
+// Function to handle wallet connection logic
+async function connectWallet(accountFromPreconnect = null) {
+    console.log("Attempting to connect wallet...");
+    try {
+        let accounts = [];
+        if (accountFromPreconnect) {
+            accounts = [accountFromPreconnect];
+        } else {
+            // Request accounts if not already pre-connected
+            accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        }
+        
+        currentAccount = accounts[0];
+        signer = provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        accountAddress.textContent = currentAccount;
+        walletStatus.textContent = "Connected";
+        connectWalletBtn.textContent = "Wallet Connected";
+        connectWalletBtn.disabled = true;
+
+        console.log("Wallet connected successfully. Account:", currentAccount);
+
+        // Setup event listeners after contract is initialized
+        setupEventListeners(); 
+        console.log("Event listeners setup.");
+
+        await updateBalance();
+        await updateMinBet(); // Update just in case
+        await checkGameState();
+        
+        gameControls.style.display = "block";
+        statusMessage.textContent = "Wallet connected. Ready to play!";
+
+    } catch (error) {
+        console.error("Failed to connect wallet:", error);
+        statusMessage.textContent = `Wallet connection failed: ${error.message.split('\n')[0]}`;
+        
+        // Reset UI on error
+        walletStatus.textContent = "Error Connecting";
+        accountAddress.textContent = "N/A";
+        accountBalance.textContent = "N/A";
+        connectWalletBtn.textContent = "Connect Wallet";
+        connectWalletBtn.disabled = false;
+        gameControls.style.display = "none";
+    }
+}
+
+// Event listener for the "Connect Wallet" button
+connectWalletBtn.addEventListener("click", () => connectWallet());
+
+// --- Update Account Balance ---
+async function updateBalance() {
+    if (currentAccount && provider) {
+        try {
+            const balanceWei = await provider.getBalance(currentAccount);
+            accountBalance.textContent = `${parseFloat(weiToZTC(balanceWei)).toFixed(4)} ZTC`;
+            console.log("Account balance updated.");
+        } catch (error) {
+            console.error("Error updating balance:", error);
+            accountBalance.textContent = "Error";
+        }
+    }
+}
+
+// --- Update Minimum Bet Display ---
+async function updateMinBet() {
+    if (readOnlyContract) { // Use readOnlyContract for initial display
+        try {
+            const minBetWei = await readOnlyContract.minBet();
+            minBetDisplay.textContent = parseFloat(weiToZTC(minBetWei)).toFixed(0); // Display as integer ZTC
+            betAmountInput.min = parseFloat(weiToZTC(minBetWei));
+            if (parseFloat(betAmountInput.value) < parseFloat(weiToZTC(minBetWei))) {
+                betAmountInput.value = parseFloat(weiToZTC(minBetWei));
+            }
+            console.log("Minimum bet updated:", parseFloat(weiToZTC(minBetWei)).toFixed(0));
+        } catch (error) {
+            console.error("Error updating minimum bet:", error);
+            minBetDisplay.textContent = "Error";
+            betAmountInput.min = 0;
+        }
+    }
+}
+
+// --- Check Current Game State ---
+async function checkGameState() {
+    if (contract && currentAccount) {
+        try {
+            const gameState = await contract.playerGames(currentAccount);
+            console.log("Game state retrieved:", gameState);
+            if (gameState.inGame) {
+                statusMessage.textContent = "You are in an active game. Make your choice!";
+                startGameBtn.disabled = true;
+                betAmountInput.disabled = true;
+                makeChoiceHeading.style.display = "block";
+                choiceButtons.style.display = "flex"; // Use flex for styling
+                playerChoiceDisplay.style.display = "none";
+                botChoiceDisplay.style.display = "none";
+                resultDisplay.style.display = "none";
+                console.log("Player is in active game.");
+            } else {
+                statusMessage.textContent = "Ready to start a new game.";
+                startGameBtn.disabled = false;
+                betAmountInput.disabled = false;
+                makeChoiceHeading.style.display = "none";
+                choiceButtons.style.display = "none";
+                playerChoiceDisplay.style.display = "none";
+                botChoiceDisplay.style.display = "none";
+                resultDisplay.style.display = "none";
+                console.log("Player not in active game.");
+            }
+        } catch (error) {
+            console.error("Error checking game state:", error);
+            statusMessage.textContent = `Error checking game state: ${error.message.split('\n')[0]}`;
+        }
+    }
+}
+
+// --- Start Game Button Event Listener ---
+startGameBtn.addEventListener("click", async () => {
     if (!signer || !contract) {
-      alert("Please connect your wallet first.");
-      return;
+        alert("Please connect your wallet first.");
+        return;
     }
 
     const betAmount = parseFloat(betAmountInput.value);
-    if (isNaN(betAmount) || betAmount < 5) {
-      alert("Minimum bet is 5 ZTC.");
-      return;
+    if (isNaN(betAmount) || betAmount < parseFloat(minBetDisplay.textContent)) {
+        alert(`Minimum bet is ${minBetDisplay.textContent} ZTC.`);
+        return;
     }
 
     try {
-      const tx = await contract.startGame({
-        value: ethers.utils.parseEther(betAmount.toString())
-      });
-      await tx.wait();
+        statusMessage.textContent = "Starting game... Confirm transaction in MetaMask.";
+        startGameBtn.disabled = true;
 
-      makeChoiceHeading.style.display = "block";
-      choiceButtons.style.display = "flex";
-      statusMessage.textContent = "Game started. Choose your move!";
+        const tx = await contract.startGame({
+            value: ethers.utils.parseEther(betAmount.toString())
+        });
+        console.log("startGame transaction sent:", tx.hash);
+        await tx.wait();
+        console.log("startGame transaction confirmed.");
+
+        makeChoiceHeading.style.display = "block";
+        choiceButtons.style.display = "flex"; // Use flex for styling
+        statusMessage.textContent = "Game started. Choose your move!";
+
+        await updateBalance(); // Update balance after sending ZTC
     } catch (err) {
-      statusMessage.textContent = "Failed to start game: " + err.message;
+        console.error("Failed to start game:", err);
+        statusMessage.textContent = "Failed to start game: " + err.message.split('\n')[0];
+        startGameBtn.disabled = false; // Re-enable button on error
     }
-  });
+});
 
-  const makeChoice = async (choiceIndex) => {
+// --- Player Choice Logic ---
+const makeChoice = async (choiceIndex) => {
     if (!contract || !signer) return;
 
     try {
-      const tx = await contract.makeChoice(choiceIndex);
-      await tx.wait();
-      statusMessage.textContent = "Choice submitted. Waiting for result...";
+        statusMessage.textContent = `Submitting your choice (${CHOICES[choiceIndex]})... Confirm transaction in MetaMask.`;
+        // Disable choice buttons during transaction
+        rockBtn.disabled = true;
+        paperBtn.disabled = true;
+        scissorsBtn.disabled = true;
+
+        const tx = await contract.makeChoice(choiceIndex);
+        console.log("makeChoice transaction sent:", tx.hash);
+        await tx.wait();
+        console.log("makeChoice transaction confirmed.");
+        statusMessage.textContent = "Choice submitted. Waiting for result...";
+
     } catch (err) {
-      statusMessage.textContent = "Error submitting choice: " + err.message;
+        console.error("Error submitting choice:", err);
+        statusMessage.textContent = "Error submitting choice: " + err.message.split('\n')[0];
+        // Re-enable choice buttons on error
+        rockBtn.disabled = false;
+        paperBtn.disabled = false;
+        scissorsBtn.disabled = false;
     }
-  };
+};
 
-  rockBtn.addEventListener("click", () => makeChoice(1));
-  paperBtn.addEventListener("click", () => makeChoice(2));
-  scissorsBtn.addEventListener("click", () => makeChoice(3));
+rockBtn.addEventListener("click", () => makeChoice(1));
+paperBtn.addEventListener("click", () => makeChoice(2));
+scissorsBtn.addEventListener("click", () => makeChoice(3));
 
-  const readOnlyContract = new ethers.Contract(contractAddress, contractABI, provider);
 
-  readOnlyContract.on("GameResolved", (player, playerChoice, botChoice, result) => {
-    if (player.toLowerCase() !== userAddress?.toLowerCase()) return;
+// --- Event Listeners from Smart Contract ---
+async function setupEventListeners() {
+    // Remove existing listeners to prevent duplicates if called multiple times
+    if (contract) { // Check if contract is initialized
+        contract.off("GameResolved");
+        contract.off("Draw");
+    }
 
-    const choices = ["None", "Rock", "Paper", "Scissors"];
-    playerChoiceDisplay.textContent = `You chose: ${choices[playerChoice]}`;
-    botChoiceDisplay.textContent = `Bot chose: ${choices[botChoice]}`;
-    resultDisplay.textContent = `Result: ${result}`;
-    resultDisplay.className = result.toLowerCase();
+    if (readOnlyContract) { // Also remove from readOnlyContract if it was used for listening
+        readOnlyContract.off("GameResolved");
+        readOnlyContract.off("Draw");
+    }
 
-    playerChoiceDisplay.style.display = "block";
-    botChoiceDisplay.style.display = "block";
-    resultDisplay.style.display = "block";
+    // Now, set up new listeners on the 'contract' instance (which has a signer)
+    if (contract) { 
+        console.log("Setting up contract event listeners...");
 
-    statusMessage.textContent =
-      result === "Win" ? "🎉 You win!" :
-      result === "Lose" ? "😞 You lose!" :
-      "🤝 It's a draw!";
-  });
+        contract.on("GameResolved", async (player, playerChoice, botChoice, result, payout) => {
+            console.log("GameResolved event received:", { player, playerChoice, botChoice, result, payout });
+            if (player.toLowerCase() === currentAccount?.toLowerCase()) { // Use optional chaining for userAddress
+                playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
+                botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
+                resultDisplay.textContent = `Result: ${result}`;
+                resultDisplay.className = ''; // Reset class
+                resultDisplay.classList.add(result.toLowerCase()); // Add win/lose/draw class
 
-  readOnlyContract.on("Draw", (player[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/Liqee/Contracts/tree/a3f444af7b9eb7c001dfc3e665a1227f5ee68f94/migrations%2F9_set_distribution_speed_2.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "1")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/paddyc1/coin-flip/tree/c9841c6c8b4e9423140e97ea5170591afa5f26f7/frontend%2FCoinFlip.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "2")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/Geology-Today/geology-today.github.io/tree/fb1066e6b142e503f9477d600fdd4417b24fb3d6/docs%2Fmain.996ad921.chunk.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "3")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/i0709/Dapp-Flip-Coin_Ropsten/tree/335394c1d0c2730791f4dbbd1cf32ff3310db90e/abi.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "4")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/MaccsUniversal/Lucky_Duckys_V2/tree/6c3811be3f98114884ec7b4f5e2c9d31d1c9c142/Web3_Scripts%2FContract_Abi.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "5")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/BitSpades/bitspades.github.io/tree/c0b29943e54402fd327639aaa37d105d3c21e413/js%2Fapp~f71cff67.9e5424b9.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "6")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/CreatifyPlatform/NiFTyHextris/tree/7779dbda6750e0ac9f4645bd223d3ae37f381253/js%2FNiFTyHextris.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "7")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/VanijaDev/playmycrypto/tree/3b8fe74f062ac5dba631f5b367c35d1a8b9b7d03/src%2Fblockchain%2Fcontract%2Fcontract.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "8")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/arun-ajay/casino-blackjack/tree/609610234c79879065195f7f1b868c17e929fc27/FrontEnd%2Fblackjack%2Fsrc%2FAbis%2FcasinoAbi.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "9")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/degentoken/gh-pages/tree/0ff0c517a3d1f903767fa1614e8113e8f9b6c064/static%2Fjs%2Fmain.c6eb8bc6.chunk.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "10")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/best-coder-NA/snowgov/tree/cd22630a425f65fa3872553156c22b0ca56e8adf/js%2Finactive%2Fsiren.8191d6f0fe3237be61ca0edd7a682a98.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "11")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/Wb379512824/Wb379512824.github.io/tree/817920f1cf45207ca387ff149143cf6c65bbd6c3/js%2Fapp.6f3262d7.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "12")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/MatricksDeCoder/stablecoin/tree/dccda3933deed1f1ef29bda8d4b445e7e66346d2/node_modules%2F@chainlink%2Fcontracts%2Ftruffle%2Fv0.6%2FOracle.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "13")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/btcapp/btcapp.github.io/tree/3b838225a9f18d119b4e3fc4eb8a6712a876f636/js%2Fdracula.d2233760b367e82273046f324860fdcc.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "14")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/rocketlemondefi/Kavian-vfat-tools/tree/e87665e51ee0724a87166020be507fd16f90a42d/src%2Fstatic%2Fjs%2Fbsc_goldenbunny.js?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "15")[43dcd9a7-70db-4a1f-b0ae-981daa162054](https://github.com/dece-cash/worldshare/tree/ca88efd7d2e33e3f35286dda2d8346539d4bfc41/src%2Fservice%2Fconfig.ts?citationMarker=43dcd9a7-70db-4a1f-b0ae-981daa162054 "16")
+                playerChoiceDisplay.style.display = "block";
+                botChoiceDisplay.style.display = "block";
+                resultDisplay.style.display = "block";
+
+                statusMessage.textContent =
+                    result === "Win" ? `🎉 You win! Won ${parseFloat(weiToZTC(payout)).toFixed(4)} ZTC.` :
+                    result === "Lose" ? `😞 You lose! Lost ${parseFloat(betAmountInput.value).toFixed(4)} ZTC.` :
+                    "🤝 It's a draw!";
+                
+                // If game ended (Win/Lose), enable start game button and bet input
+                if (result === "Win" || result === "Lose") {
+                    startGameBtn.disabled = false;
+                    betAmountInput.disabled = false;
+                    choiceButtons.style.display = "none";
+                    makeChoiceHeading.style.display = "none";
+                }
+
+                // Re-enable choice buttons for next potential move (e.g., after a draw)
+                rockBtn.disabled = false;
+                paperBtn.disabled = false;
+                scissorsBtn.disabled = false;
+
+                await updateBalance(); // Update balance after game
+                await checkGameState(); // Check state for re-roll or new game
+            }
+        });
+
+        contract.on("Draw", async (player, playerChoice, botChoice) => {
+            console.log("Draw event received:", { player, playerChoice, botChoice });
+            if (player.toLowerCase() === currentAccount?.toLowerCase()) {
+                playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
+                botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
+                resultDisplay.textContent = `Result: It's a DRAW! Play again!`;
+                resultDisplay.className = '';
+                resultDisplay.classList.add('draw');
+
+                playerChoiceDisplay.style.display = "block";
+                botChoiceDisplay.style.display = "block";
+                resultDisplay.style.display = "block";
+
+                statusMessage.textContent = "It's a draw! Make your choice again for another round (no extra bet).";
+                
+                rockBtn.disabled = false;
+                paperBtn.disabled = false;
+                scissorsBtn.disabled = false;
+                startGameBtn.disabled = true; // Keep start game disabled during draw re-roll
+                betAmountInput.disabled = true; // Keep bet input disabled during draw re-roll
+
+                await updateBalance();
+                await checkGameState();
+            }
+        });
+
+        // Listen for account changes in MetaMask
+        window.ethereum.on('accountsChanged', async (accounts) => {
+            console.log("accountsChanged event:", accounts);
+            if (accounts.length > 0) {
+                await connectWallet(accounts[0]); // Re-connect with the new account
+            } else {
+                // Wallet disconnected
+                currentAccount = null;
+                accountAddress.textContent = "N/A";
+                accountBalance.textContent = "N/A";
+                walletStatus.textContent = "Disconnected";
+                connectWalletBtn.textContent = "Connect Wallet";
+                connectWalletBtn.disabled = false;
+                gameControls.style.display = "none";
+                statusMessage.textContent = "Connect wallet to start.";
+                // Remove listeners to prevent errors when no account is connected
+                if (contract) {
+                   contract.off("GameResolved");
+                   contract.off("Draw");
+                   console.log("Event listeners removed on disconnect.");
+                }
+            }
+        });
+
+        // Listen for network changes in MetaMask
+        window.ethereum.on('chainChanged', (chainId) => {
+            console.log("chainChanged event:", chainId);
+            // Reload the page if the network changes
+            window.location.reload();
+        });
+    } else {
+        console.log("Contract instance not available for setting up listeners. This might be normal if called early.");
+    }
+}
+
+// Run initDapp when the DOM is fully loaded
+window.addEventListener("DOMContentLoaded", initDapp);
