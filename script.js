@@ -1,45 +1,195 @@
-const CONTRACT_ADDRESS = "0xecda4696f2Bf39693B5E59F0d78a8B3975A7B10a";
-const CONTRACT_ABI = [
-  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
-  { "anonymous": false, "inputs": [
-    { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
-    { "indexed": false, "internalType": "enum RockPaperScissors.Choice", "name": "playerChoice", "type": "uint8" },
-    { "indexed": false, "internalType": "enum RockPaperScissors.Choice", "name": "botChoice", "type": "uint8" }
-  ], "name": "Draw", "type": "event" },
-  { "anonymous": false, "inputs": [
-    { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
-    { "indexed": false, "internalType": "enum RockPaperScissors.Choice", "name": "playerChoice", "type": "uint8" },
-    { "indexed": false, "internalType": "enum RockPaperScissors.Choice", "name": "botChoice", "type": "uint8" },
-    { "indexed": false, "internalType": "string", "name": "result", "type": "string" },
-    { "indexed": false, "internalType": "uint256", "name": "payout", "type": "uint256" }
-  ], "name": "GameResolved", "type": "event" },
-  { "anonymous": false, "inputs": [
-    { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
-    { "indexed": false, "internalType": "uint256", "name": "betAmount", "type": "uint256" }
-  ], "name": "GameStarted", "type": "event" },
-  { "anonymous": false, "inputs": [
-    { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
-    { "indexed": false, "internalType": "enum RockPaperScissors.Choice", "name": "choice", "type": "uint8" }
-  ], "name": "PlayerChose", "type": "event" },
-  { "inputs": [ { "internalType": "enum RockPaperScissors.Choice", "name": "_playerChoice", "type": "uint8" } ],
-    "name": "makeChoice", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-  { "inputs": [], "name": "minBet", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ],
-    "stateMutability": "view", "type": "function" },
-  { "inputs": [], "name": "owner", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ],
-    "stateMutability": "view", "type": "function" },
-  { "inputs": [ { "internalType": "address", "name": "", "type": "address" } ],
-    "name": "playerGames", "outputs": [
-      { "internalType": "enum RockPaperScissors.Choice", "name": "playerChoice", "type": "uint8" },
-      { "internalType": "uint256", "name": "betAmount", "type": "uint256" },
-      { "internalType": "bool", "name": "inGame", "type": "bool" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  { "inputs": [], "name": "startGame", "outputs": [], "stateMutability": "payable", "type": "function" },
-  { "inputs": [], "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
-];
+const CONTRACT_ADDRESS = "0x8155140cEd70f2440aafE09e376E754fc3B81347"; // <<< UPDATED: Your NEW deployed contract address
 
+// --- UPDATED CONTRACT_ABI with "payable" for makeChoice and other changes ---
+const CONTRACT_ABI = [
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "playerChoice",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "botChoice",
+				"type": "uint8"
+			}
+		],
+		"name": "Draw",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "playerChoice",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "botChoice",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "result",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "payout",
+				"type": "uint256"
+			}
+		],
+		"name": "GameResolved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "betAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "GameStarted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "choice",
+				"type": "uint8"
+			}
+		],
+		"name": "PlayerChose",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "_playerChoice",
+				"type": "uint8"
+			}
+		],
+		"name": "makeChoice",
+		"outputs": [],
+		"stateMutability": "payable", // <-- This is correctly set to payable
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "minBet",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerGames",
+		"outputs": [
+			{
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "playerChoice",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint256",
+				"name": "betAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "inGame",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "startGame",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
 
 // Global variables for ethers and contract instances
 let provider;
@@ -65,7 +215,7 @@ const scissorsBtn = document.getElementById("scissorsBtn");
 const statusMessage = document.getElementById("statusMessage");
 const playerChoiceDisplay = document.getElementById("playerChoiceDisplay");
 const botChoiceDisplay = document.getElementById("botChoiceDisplay");
-const resultDisplay = document.getElementById("resultDisplay");
+const resultDisplay = document.getElementById("resultDisplay"); // Corrected ID reference if it was resultById
 const minBetDisplay = document.getElementById("minBetDisplay");
 
 // Game Choice Mapping
@@ -87,7 +237,6 @@ async function initDapp() {
     console.log("Initializing DApp...");
     if (typeof window.ethereum !== 'undefined') {
         // Give MetaMask a moment to inject and become ready
-        // This is crucial for some mobile browsers
         await new Promise(resolve => setTimeout(resolve, 300)); 
         
         provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -144,7 +293,7 @@ async function connectWallet(accountFromPreconnect = null) {
 
         // Setup event listeners after contract is initialized
         setupEventListeners(); 
-        console.log("Event listeners setup.");
+        console.log("Event listeners setup triggered.");
 
         await updateBalance();
         await updateMinBet(); // Update just in case
@@ -308,12 +457,12 @@ scissorsBtn.addEventListener("click", () => makeChoice(3));
 // --- Event Listeners from Smart Contract ---
 async function setupEventListeners() {
     // Remove existing listeners to prevent duplicates if called multiple times
-    if (contract) { // Check if contract is initialized
+    if (contract) { 
         contract.off("GameResolved");
         contract.off("Draw");
     }
 
-    if (readOnlyContract) { // Also remove from readOnlyContract if it was used for listening
+    if (readOnlyContract) { 
         readOnlyContract.off("GameResolved");
         readOnlyContract.off("Draw");
     }
@@ -324,12 +473,12 @@ async function setupEventListeners() {
 
         contract.on("GameResolved", async (player, playerChoice, botChoice, result, payout) => {
             console.log("GameResolved event received:", { player, playerChoice, botChoice, result, payout });
-            if (player.toLowerCase() === currentAccount?.toLowerCase()) { // Use optional chaining for userAddress
+            if (player.toLowerCase() === currentAccount?.toLowerCase()) { 
                 playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
                 botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
                 resultDisplay.textContent = `Result: ${result}`;
-                resultDisplay.className = ''; // Reset class
-                resultDisplay.classList.add(result.toLowerCase()); // Add win/lose/draw class
+                resultDisplay.className = ''; 
+                resultDisplay.classList.add(result.toLowerCase()); 
 
                 playerChoiceDisplay.style.display = "block";
                 botChoiceDisplay.style.display = "block";
@@ -340,7 +489,6 @@ async function setupEventListeners() {
                     result === "Lose" ? `😞 You lose! Lost ${parseFloat(betAmountInput.value).toFixed(4)} ZTC.` :
                     "🤝 It's a draw!";
                 
-                // If game ended (Win/Lose), enable start game button and bet input
                 if (result === "Win" || result === "Lose") {
                     startGameBtn.disabled = false;
                     betAmountInput.disabled = false;
@@ -348,13 +496,12 @@ async function setupEventListeners() {
                     makeChoiceHeading.style.display = "none";
                 }
 
-                // Re-enable choice buttons for next potential move (e.g., after a draw)
                 rockBtn.disabled = false;
                 paperBtn.disabled = false;
                 scissorsBtn.disabled = false;
 
-                await updateBalance(); // Update balance after game
-                await checkGameState(); // Check state for re-roll or new game
+                await updateBalance(); 
+                await checkGameState(); 
             }
         });
 
@@ -376,21 +523,19 @@ async function setupEventListeners() {
                 rockBtn.disabled = false;
                 paperBtn.disabled = false;
                 scissorsBtn.disabled = false;
-                startGameBtn.disabled = true; // Keep start game disabled during draw re-roll
-                betAmountInput.disabled = true; // Keep bet input disabled during draw re-roll
+                startGameBtn.disabled = true; 
+                betAmountInput.disabled = true; 
 
                 await updateBalance();
                 await checkGameState();
             }
         });
 
-        // Listen for account changes in MetaMask
         window.ethereum.on('accountsChanged', async (accounts) => {
             console.log("accountsChanged event:", accounts);
             if (accounts.length > 0) {
-                await connectWallet(accounts[0]); // Re-connect with the new account
+                await connectWallet(accounts[0]); 
             } else {
-                // Wallet disconnected
                 currentAccount = null;
                 accountAddress.textContent = "N/A";
                 accountBalance.textContent = "N/A";
@@ -399,8 +544,7 @@ async function setupEventListeners() {
                 connectWalletBtn.disabled = false;
                 gameControls.style.display = "none";
                 statusMessage.textContent = "Connect wallet to start.";
-                // Remove listeners to prevent errors when no account is connected
-                if (contract) {
+                if (contract) { 
                    contract.off("GameResolved");
                    contract.off("Draw");
                    console.log("Event listeners removed on disconnect.");
@@ -408,10 +552,8 @@ async function setupEventListeners() {
             }
         });
 
-        // Listen for network changes in MetaMask
         window.ethereum.on('chainChanged', (chainId) => {
             console.log("chainChanged event:", chainId);
-            // Reload the page if the network changes
             window.location.reload();
         });
     } else {
@@ -421,3 +563,7 @@ async function setupEventListeners() {
 
 // Run initDapp when the DOM is fully loaded
 window.addEventListener("DOMContentLoaded", initDapp);
+
+// NOTE: The direct `window.addEventListener('load', setupEventListeners);` line
+// from previous versions has been removed. Event listeners are now set up
+// reliably once the `contract` object is initialized inside `connectWallet`.
