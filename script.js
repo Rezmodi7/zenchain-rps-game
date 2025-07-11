@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0x8155140cEd70f2440aafE09e376E754fc3B81347"; // Your NEW deployed contract address
+const CONTRACT_ADDRESS = "0x0cC77c746f3ee03B074Ee836c2cC83DB6204b8eD"; // <<< UPDATED: Your NEWEST deployed contract address
 
 const CONTRACT_ABI = [
 	{
@@ -88,6 +88,19 @@ const CONTRACT_ABI = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "_playerChoice",
+				"type": "uint8"
+			}
+		],
+		"name": "makeChoice",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -107,16 +120,17 @@ const CONTRACT_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "enum RockPaperScissors.Choice",
-				"name": "_playerChoice",
-				"type": "uint8"
-			}
-		],
-		"name": "makeChoice",
+		"inputs": [],
+		"name": "startGame",
 		"outputs": [],
 		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -173,20 +187,6 @@ const CONTRACT_ABI = [
 		],
 		"stateMutability": "view",
 		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "startGame",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "withdraw",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	}
 ];
 
@@ -234,6 +234,7 @@ function weiToZTC(wei) {
 // Function to initialize DApp state and check for MetaMask
 async function initDapp() {
     if (typeof window.ethereum !== 'undefined') {
+        // Give MetaMask a moment to inject and become ready
         await new Promise(resolve => setTimeout(resolve, 300)); 
         
         provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -249,7 +250,7 @@ async function initDapp() {
                 await connectWallet(accounts[0]); // Connect with the first account
             }
         } catch (error) {
-            console.error("Error checking pre-connected accounts:", error);
+            console.error("Error checking pre-connected accounts:", error); 
         }
 
         await updateMinBet(); // Display minBet even before wallet is connected
@@ -290,7 +291,7 @@ async function connectWallet(accountFromPreconnect = null) {
         statusMessage.textContent = "Wallet connected. Ready to play!";
 
     } catch (error) {
-        console.error("Failed to connect wallet:", error);
+        console.error("Failed to connect wallet:", error); 
         statusMessage.textContent = `Wallet connection failed: ${error.message.split('\n')[0]}`;
         
         // Reset UI on error
@@ -313,7 +314,7 @@ async function updateBalance() {
             const balanceWei = await provider.getBalance(currentAccount);
             accountBalance.textContent = `${parseFloat(weiToZTC(balanceWei)).toFixed(4)} ZTC`;
         } catch (error) {
-            console.error("Error updating balance:", error);
+            console.error("Error updating balance:", error); 
             accountBalance.textContent = "Error";
         }
     }
@@ -330,7 +331,7 @@ async function updateMinBet() {
                 betAmountInput.value = parseFloat(weiToZTC(minBetWei));
             }
         } catch (error) {
-            console.error("Error updating minimum bet:", error);
+            console.error("Error updating minimum bet:", error); 
             minBetDisplay.textContent = "Error";
             betAmountInput.min = 0;
         }
@@ -362,7 +363,7 @@ async function checkGameState() {
                 resultDisplay.style.display = "none";
             }
         } catch (error) {
-            console.error("Error checking game state:", error);
+            console.error("Error checking game state:", error); 
             statusMessage.textContent = `Error checking game state: ${error.message.split('\n')[0]}`;
         }
     }
@@ -396,7 +397,7 @@ startGameBtn.addEventListener("click", async () => {
 
         await updateBalance(); 
     } catch (err) {
-        console.error("Failed to start game:", err);
+        console.error("Failed to start game:", err); 
         statusMessage.textContent = "Failed to start game: " + err.message.split('\n')[0];
         startGameBtn.disabled = false; 
     }
@@ -417,7 +418,7 @@ const makeChoice = async (choiceIndex) => {
         statusMessage.textContent = "Choice submitted. Waiting for result...";
 
     } catch (err) {
-        console.error("Error submitting choice:", err);
+        console.error("Error submitting choice:", err); 
         statusMessage.textContent = "Error submitting choice: " + err.message.split('\n')[0];
         rockBtn.disabled = false;
         paperBtn.disabled = false;
