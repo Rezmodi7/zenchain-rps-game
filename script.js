@@ -1,6 +1,5 @@
-const CONTRACT_ADDRESS = "0x8155140cEd70f2440aafE09e376E754fc3B81347"; // <<< UPDATED: Your NEW deployed contract address
+const CONTRACT_ADDRESS = "0x8155140cEd70f2440aafE09e376E754fc3B81347"; // Your NEW deployed contract address
 
-// --- UPDATED CONTRACT_ABI with "payable" for makeChoice and other changes ---
 const CONTRACT_ABI = [
 	{
 		"inputs": [],
@@ -117,7 +116,7 @@ const CONTRACT_ABI = [
 		],
 		"name": "makeChoice",
 		"outputs": [],
-		"stateMutability": "payable", // <-- This is correctly set to payable
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -215,7 +214,7 @@ const scissorsBtn = document.getElementById("scissorsBtn");
 const statusMessage = document.getElementById("statusMessage");
 const playerChoiceDisplay = document.getElementById("playerChoiceDisplay");
 const botChoiceDisplay = document.getElementById("botChoiceDisplay");
-const resultDisplay = document.getElementById("resultDisplay"); // Corrected ID reference if it was resultById
+const resultDisplay = document.getElementById("resultDisplay");
 const minBetDisplay = document.getElementById("minBetDisplay");
 
 // Game Choice Mapping
@@ -234,26 +233,20 @@ function weiToZTC(wei) {
 
 // Function to initialize DApp state and check for MetaMask
 async function initDapp() {
-    console.log("Initializing DApp...");
     if (typeof window.ethereum !== 'undefined') {
-        // Give MetaMask a moment to inject and become ready
         await new Promise(resolve => setTimeout(resolve, 300)); 
         
         provider = new ethers.providers.Web3Provider(window.ethereum);
-        readOnlyContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider); // Initialize read-only contract early
+        readOnlyContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 
         walletStatus.textContent = "MetaMask Detected";
         connectWalletBtn.style.display = "block";
-        console.log("MetaMask detected. Ready to connect.");
 
         // Try to pre-connect if already authorized
         try {
             const accounts = await provider.listAccounts();
             if (accounts.length > 0) {
-                console.log("Accounts already connected:", accounts[0]);
                 await connectWallet(accounts[0]); // Connect with the first account
-            } else {
-                console.log("No accounts pre-connected.");
             }
         } catch (error) {
             console.error("Error checking pre-connected accounts:", error);
@@ -264,19 +257,16 @@ async function initDapp() {
         walletStatus.textContent = "MetaMask not detected. Please install MetaMask to play.";
         connectWalletBtn.style.display = "none";
         statusMessage.textContent = "MetaMask is required to play.";
-        console.log("MetaMask not detected.");
     }
 }
 
 // Function to handle wallet connection logic
 async function connectWallet(accountFromPreconnect = null) {
-    console.log("Attempting to connect wallet...");
     try {
         let accounts = [];
         if (accountFromPreconnect) {
             accounts = [accountFromPreconnect];
         } else {
-            // Request accounts if not already pre-connected
             accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
         }
         
@@ -289,14 +279,11 @@ async function connectWallet(accountFromPreconnect = null) {
         connectWalletBtn.textContent = "Wallet Connected";
         connectWalletBtn.disabled = true;
 
-        console.log("Wallet connected successfully. Account:", currentAccount);
-
         // Setup event listeners after contract is initialized
         setupEventListeners(); 
-        console.log("Event listeners setup triggered.");
 
         await updateBalance();
-        await updateMinBet(); // Update just in case
+        await updateMinBet(); 
         await checkGameState();
         
         gameControls.style.display = "block";
@@ -325,7 +312,6 @@ async function updateBalance() {
         try {
             const balanceWei = await provider.getBalance(currentAccount);
             accountBalance.textContent = `${parseFloat(weiToZTC(balanceWei)).toFixed(4)} ZTC`;
-            console.log("Account balance updated.");
         } catch (error) {
             console.error("Error updating balance:", error);
             accountBalance.textContent = "Error";
@@ -335,15 +321,14 @@ async function updateBalance() {
 
 // --- Update Minimum Bet Display ---
 async function updateMinBet() {
-    if (readOnlyContract) { // Use readOnlyContract for initial display
+    if (readOnlyContract) { 
         try {
             const minBetWei = await readOnlyContract.minBet();
-            minBetDisplay.textContent = parseFloat(weiToZTC(minBetWei)).toFixed(0); // Display as integer ZTC
+            minBetDisplay.textContent = parseFloat(weiToZTC(minBetWei)).toFixed(0); 
             betAmountInput.min = parseFloat(weiToZTC(minBetWei));
             if (parseFloat(betAmountInput.value) < parseFloat(weiToZTC(minBetWei))) {
                 betAmountInput.value = parseFloat(weiToZTC(minBetWei));
             }
-            console.log("Minimum bet updated:", parseFloat(weiToZTC(minBetWei)).toFixed(0));
         } catch (error) {
             console.error("Error updating minimum bet:", error);
             minBetDisplay.textContent = "Error";
@@ -357,17 +342,15 @@ async function checkGameState() {
     if (contract && currentAccount) {
         try {
             const gameState = await contract.playerGames(currentAccount);
-            console.log("Game state retrieved:", gameState);
             if (gameState.inGame) {
                 statusMessage.textContent = "You are in an active game. Make your choice!";
                 startGameBtn.disabled = true;
                 betAmountInput.disabled = true;
                 makeChoiceHeading.style.display = "block";
-                choiceButtons.style.display = "flex"; // Use flex for styling
+                choiceButtons.style.display = "flex"; 
                 playerChoiceDisplay.style.display = "none";
                 botChoiceDisplay.style.display = "none";
                 resultDisplay.style.display = "none";
-                console.log("Player is in active game.");
             } else {
                 statusMessage.textContent = "Ready to start a new game.";
                 startGameBtn.disabled = false;
@@ -377,7 +360,6 @@ async function checkGameState() {
                 playerChoiceDisplay.style.display = "none";
                 botChoiceDisplay.style.display = "none";
                 resultDisplay.style.display = "none";
-                console.log("Player not in active game.");
             }
         } catch (error) {
             console.error("Error checking game state:", error);
@@ -406,19 +388,17 @@ startGameBtn.addEventListener("click", async () => {
         const tx = await contract.startGame({
             value: ethers.utils.parseEther(betAmount.toString())
         });
-        console.log("startGame transaction sent:", tx.hash);
         await tx.wait();
-        console.log("startGame transaction confirmed.");
 
         makeChoiceHeading.style.display = "block";
-        choiceButtons.style.display = "flex"; // Use flex for styling
+        choiceButtons.style.display = "flex"; 
         statusMessage.textContent = "Game started. Choose your move!";
 
-        await updateBalance(); // Update balance after sending ZTC
+        await updateBalance(); 
     } catch (err) {
         console.error("Failed to start game:", err);
         statusMessage.textContent = "Failed to start game: " + err.message.split('\n')[0];
-        startGameBtn.disabled = false; // Re-enable button on error
+        startGameBtn.disabled = false; 
     }
 });
 
@@ -428,21 +408,17 @@ const makeChoice = async (choiceIndex) => {
 
     try {
         statusMessage.textContent = `Submitting your choice (${CHOICES[choiceIndex]})... Confirm transaction in MetaMask.`;
-        // Disable choice buttons during transaction
         rockBtn.disabled = true;
         paperBtn.disabled = true;
         scissorsBtn.disabled = true;
 
         const tx = await contract.makeChoice(choiceIndex);
-        console.log("makeChoice transaction sent:", tx.hash);
         await tx.wait();
-        console.log("makeChoice transaction confirmed.");
         statusMessage.textContent = "Choice submitted. Waiting for result...";
 
     } catch (err) {
         console.error("Error submitting choice:", err);
         statusMessage.textContent = "Error submitting choice: " + err.message.split('\n')[0];
-        // Re-enable choice buttons on error
         rockBtn.disabled = false;
         paperBtn.disabled = false;
         scissorsBtn.disabled = false;
@@ -456,7 +432,6 @@ scissorsBtn.addEventListener("click", () => makeChoice(3));
 
 // --- Event Listeners from Smart Contract ---
 async function setupEventListeners() {
-    // Remove existing listeners to prevent duplicates if called multiple times
     if (contract) { 
         contract.off("GameResolved");
         contract.off("Draw");
@@ -467,12 +442,8 @@ async function setupEventListeners() {
         readOnlyContract.off("Draw");
     }
 
-    // Now, set up new listeners on the 'contract' instance (which has a signer)
     if (contract) { 
-        console.log("Setting up contract event listeners...");
-
         contract.on("GameResolved", async (player, playerChoice, botChoice, result, payout) => {
-            console.log("GameResolved event received:", { player, playerChoice, botChoice, result, payout });
             if (player.toLowerCase() === currentAccount?.toLowerCase()) { 
                 playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
                 botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
@@ -506,7 +477,6 @@ async function setupEventListeners() {
         });
 
         contract.on("Draw", async (player, playerChoice, botChoice) => {
-            console.log("Draw event received:", { player, playerChoice, botChoice });
             if (player.toLowerCase() === currentAccount?.toLowerCase()) {
                 playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
                 botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
@@ -532,7 +502,6 @@ async function setupEventListeners() {
         });
 
         window.ethereum.on('accountsChanged', async (accounts) => {
-            console.log("accountsChanged event:", accounts);
             if (accounts.length > 0) {
                 await connectWallet(accounts[0]); 
             } else {
@@ -547,23 +516,15 @@ async function setupEventListeners() {
                 if (contract) { 
                    contract.off("GameResolved");
                    contract.off("Draw");
-                   console.log("Event listeners removed on disconnect.");
                 }
             }
         });
 
         window.ethereum.on('chainChanged', (chainId) => {
-            console.log("chainChanged event:", chainId);
             window.location.reload();
         });
-    } else {
-        console.log("Contract instance not available for setting up listeners. This might be normal if called early.");
     }
 }
 
 // Run initDapp when the DOM is fully loaded
 window.addEventListener("DOMContentLoaded", initDapp);
-
-// NOTE: The direct `window.addEventListener('load', setupEventListeners);` line
-// from previous versions has been removed. Event listeners are now set up
-// reliably once the `contract` object is initialized inside `connectWallet`.
