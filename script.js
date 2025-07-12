@@ -277,54 +277,44 @@ const ABI = [
 let provider, signer, contract, userAccount;
 
 window.addEventListener("DOMContentLoaded", () => {
-  const connectBtn = document.getElementById("connectBtn");
-  const startBtn = document.getElementById("startBtn");
-  const choices = document.querySelectorAll(".choice-btn");
-
-  connectBtn.onclick = connectWallet;
-  startBtn.onclick = startGame;
-  choices.forEach(btn => {
+  document.getElementById("connectBtn").onclick = connectWallet;
+  document.getElementById("startBtn").onclick = startGame;
+  document.querySelectorAll(".choice-btn").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
 
-  document.body.classList.add("dark-theme"); // default theme
+  document.body.classList.add("dark-theme");
   updateStatus("Ready");
 });
 
+// Updates status message displayed to the user
 function updateStatus(text) {
   document.getElementById("status").innerText = `Status: ${text}`;
 }
 
-// Typewriter effect for wallet address
-function typeWalletAddress(address) {
-  const target = document.getElementById("walletAddress");
-  target.textContent = "";
-  let index = 0;
-
-  function typeNext() {
-    if (index < address.length) {
-      target.textContent += address[index];
-      index++;
-      setTimeout(typeNext, 40);
+// Typing effect for displaying game result
+function typeResult(text) {
+  const el = document.getElementById("resultBox");
+  el.textContent = "";
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+      setTimeout(type, 30);
     }
   }
-
-  typeNext();
+  type();
 }
 
-// Theme toggler
+// Toggle between light and dark theme
 function toggleTheme() {
   const body = document.body;
-  if (body.classList.contains("dark-theme")) {
-    body.classList.remove("dark-theme");
-    body.classList.add("light-theme");
-  } else {
-    body.classList.remove("light-theme");
-    body.classList.add("dark-theme");
-  }
+  body.classList.toggle("dark-theme");
+  body.classList.toggle("light-theme");
 }
 
-// Connect wallet and initialize contract
+// Connect MetaMask wallet and initialize contract
 async function connectWallet() {
   if (!window.ethereum) {
     alert("Please install MetaMask");
@@ -332,14 +322,16 @@ async function connectWallet() {
   }
 
   try {
-    await window.ethereum.request({ method: "eth_requestAccounts" });
+    await ethereum.request({ method: "eth_requestAccounts" });
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
     userAccount = await signer.getAddress();
     contract = new ethers.Contract(contractAddress, ABI, signer);
 
-    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}`;
-    typeWalletAddress(userAccount);
+    const balance = await provider.getBalance(userAccount);
+    const ztc = ethers.utils.formatEther(balance);
+
+    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
     document.getElementById("connectBtn").innerText = "🔌 Connected";
     updateStatus("Wallet connected");
 
@@ -350,7 +342,7 @@ async function connectWallet() {
   }
 }
 
-// Start game with bet
+// Initiate the game by sending a bet amount
 async function startGame() {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -374,7 +366,7 @@ async function startGame() {
   }
 }
 
-// Submit player choice and handle result
+// Submit player's choice and handle game resolution
 async function makeChoice(choice) {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -388,32 +380,45 @@ async function makeChoice(choice) {
 
     const event = receipt.events.find(e => e.event === "GameResolved" || e.event === "Draw");
 
+    const choiceMap = {
+      1: "Rock",
+      2: "Paper",
+      3: "Scissors"
+    };
+
     if (event) {
       const { playerChoice, botChoice, result } = event.args;
-      const emojis = ["", "🪨", "📄", "✂️"];
-      const msg =
+
+      const resultMessage =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
-        "🤝 It's a draw! 🔄";
+        "🤝 It's a draw!";
 
-      updateStatus(`${msg} You: ${emojis[playerChoice]} | Bot: ${emojis[botChoice]}`);
-      document.getElementById("resultBox").innerText =
-        `🤖 You chose ${playerChoice}, Bot chose ${botChoice}. Result: ${result}`;
+      const summary = `🤖 You chose ${choiceMap[playerChoice]}, Bot chose ${choiceMap[botChoice]}.\nResult: ${resultMessage}`;
+      typeResult(summary);
+      updateStatus(resultMessage);
     } else {
-      document.getElementById("resultBox").innerText =
-        "✅ Transaction successful, awaiting result...";
+      typeResult("✅ Transaction successful, awaiting result...");
     }
 
     await showPlayerStats();
   } catch (err) {
-    console.error("❌ Error during play:", err);
-    updateStatus("Error: " + (err.reason || err.message).split("\n")[0]);
-    document.getElementById("resultBox").innerText =
-      "⚠️ Error occurred during the game.";
+    console.error("Error during play:", err);
+
+    let message = "⚠️ Unknown error occurred";
+    const reason = (err.reason || err.message || "").toLowerCase();
+
+    if (reason.includes("insufficient")) message = "❌ Wallet balance is insufficient.";
+    else if (reason.includes("already")) message = "⏳ You are already in a game.";
+    else if (reason.includes("draw")) message = "🤝 It's a draw!";
+    else if (reason.includes("not started")) message = "Please start the game first.";
+
+    typeResult(message);
+    updateStatus(message);
   }
 }
 
-// Show player stats
+// Fetch and display player's game statistics
 async function showPlayerStats() {
   try {
     const stats = await contract.playerStats(userAccount);
@@ -428,8 +433,7 @@ Total Games: ${totalGames}
     `;
     document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
-    console.error("⚠️ Failed to fetch player stats:", err);
-    document.getElementById("statsBox").innerText =
-      "📉 Unable to load stats.";
+    console.error("Failed to fetch player stats:", err);
+    document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
   }
-}
+  }
