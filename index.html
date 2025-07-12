@@ -9,37 +9,32 @@
 </head>
 <body class="dark-theme">
 
-  <!-- Toggle Theme Button -->
   <button class="uniform-box" onclick="toggleTheme()">🌓</button>
 
-  <!-- Header -->
   <header>
     <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
     <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
   </header>
 
-  <!-- Title -->
   <div class="title-section">
     <h1>ZENCHAIN</h1>
     <h2>Rock Paper Scissors Game</h2>
   </div>
 
-  <!-- Wallet Section -->
   <button class="uniform-box" id="connectBtn">🔌 Connect Wallet</button>
   <p id="walletAddr">Wallet: Not connected</p>
 
-  <!-- Bet Input -->
-  <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)"/>
-  <button class="uniform-box" id="startBtn">🎮</button>
+  <div class="bet-control-group">
+    <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)">
+    <button class="uniform-box" id="startBtn">🎮</button>
+  </div>
 
-  <!-- Game Choices with Emojis -->
   <div class="choices-container">
     <button class="choice-square" data-choice="1">✊</button>
     <button class="choice-square" data-choice="2">✋</button>
     <button class="choice-square" data-choice="3">✌️</button>
   </div>
 
-  <!-- Results and Stats -->
   <div id="resultBox">Game results will appear here</div>
   <button class="uniform-box" onclick="showPlayerStats()">📊</button>
   <pre id="statsBox">Player stats will be shown here</pre>
