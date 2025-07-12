@@ -6,7 +6,6 @@ let signer;
 const contractAddress = "0x7Ca41FF431d6422B58Af9d15474484EDB7b50154";
 
 const ABI = [
-[
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
