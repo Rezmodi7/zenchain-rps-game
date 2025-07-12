@@ -1,9 +1,18 @@
 body {
   font-family: 'Segoe UI', sans-serif;
-  background-color: #111;
-  color: #eee;
   text-align: center;
   padding: 2rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-theme {
+  background-color: #111;
+  color: #eee;
+}
+
+body.light-theme {
+  background-color: #f5f5f5;
+  color: #111;
 }
 
 header {
@@ -12,6 +21,7 @@ header {
 
 .logo-img {
   height: 120px;
+  max-width: 100%;
   margin-bottom: 1rem;
 }
 
@@ -35,7 +45,7 @@ header {
   background-color: #00ffc6;
   color: #000;
   font-weight: bold;
-  margin: 0.2rem;
+  margin: 0.3rem;
   cursor: pointer;
 }
 
@@ -69,6 +79,11 @@ input[type="number"].uniform-box {
   border: none;
   border-radius: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.choice-square:hover {
+  transform: scale(1.2);
 }
 
 #status, #resultBox, #statsBox {
@@ -80,4 +95,13 @@ input[type="number"].uniform-box {
   white-space: pre-wrap;
   background-color: #222;
   color: #eee;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+body.light-theme #status,
+body.light-theme #resultBox,
+body.light-theme #statsBox {
+  background-color: #fff;
+  color: #111;
 }
