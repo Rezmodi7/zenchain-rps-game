@@ -1,6 +1,6 @@
 const contractAddress = "0x7Ca41FF431d6422B58Af9d15474484EDB7b50154";
 const ABI = [
-{
+  {
 "inputs": [],
 "stateMutability": "nonpayable",
 "type": "constructor"
@@ -279,7 +279,7 @@ let provider, signer, contract, userAccount;
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("connectBtn").onclick = connectWallet;
   document.getElementById("startBtn").onclick = startGame;
-  document.querySelectorAll(".choice-btn").forEach(btn => {
+  document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
 
@@ -287,12 +287,12 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStatus("Ready");
 });
 
-// Updates status message displayed to the user
+// Updates status message
 function updateStatus(text) {
   document.getElementById("status").innerText = `Status: ${text}`;
 }
 
-// Typing effect for displaying game result
+// Typing animation for game result
 function typeResult(text) {
   const el = document.getElementById("resultBox");
   el.textContent = "";
@@ -307,14 +307,13 @@ function typeResult(text) {
   type();
 }
 
-// Toggle between light and dark theme
+// Toggle light/dark theme
 function toggleTheme() {
-  const body = document.body;
-  body.classList.toggle("dark-theme");
-  body.classList.toggle("light-theme");
+  document.body.classList.toggle("dark-theme");
+  document.body.classList.toggle("light-theme");
 }
 
-// Connect MetaMask wallet and initialize contract
+// Connect wallet and initialize contract
 async function connectWallet() {
   if (!window.ethereum) {
     alert("Please install MetaMask");
@@ -342,7 +341,7 @@ async function connectWallet() {
   }
 }
 
-// Initiate the game by sending a bet amount
+// Start the game with bet value
 async function startGame() {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -366,7 +365,7 @@ async function startGame() {
   }
 }
 
-// Submit player's choice and handle game resolution
+// Submit player's choice and handle result
 async function makeChoice(choice) {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -418,7 +417,7 @@ async function makeChoice(choice) {
   }
 }
 
-// Fetch and display player's game statistics
+// Fetch and display player's game stats
 async function showPlayerStats() {
   try {
     const stats = await contract.playerStats(userAccount);
@@ -436,4 +435,4 @@ Total Games: ${totalGames}
     console.error("Failed to fetch player stats:", err);
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
   }
-  }
+    }
