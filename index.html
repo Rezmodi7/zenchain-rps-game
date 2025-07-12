@@ -1,103 +1,42 @@
-body {
-  font-family: 'Segoe UI', sans-serif;
-  text-align: center;
-  padding: 2rem;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZenChain</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+</head>
+<body class="dark-theme">
 
-body.dark-theme {
-  background-color: #111;
-  color: #eee;
-}
+  <header>
+    <div class="title-section">
+      <img class="logo-img" src="zenchain-logo.png" alt="ZenChain Logo" />
+      <h1>ZenChain</h1>
+      <h2>Play Rock-Paper-Scissors with Smart Contracts</h2>
+    </div>
+  </header>
 
-body.light-theme {
-  background-color: #f5f5f5;
-  color: #111;
-}
+  <button onclick="toggleTheme()" class="uniform-box">🌓 Toggle Theme</button>
 
-.logo-img {
-  height: 120px;
-  max-width: 100%;
-  margin-bottom: 1rem;
-}
+  <div id="walletAddr">Wallet: Not connected</div>
+  <button id="connectBtn" class="uniform-box">🔌 Connect Wallet</button>
 
-.title-section h1 {
-  font-size: 2.5rem;
-  margin: 0;
-  color: #00ffc6;
-}
+  <div class="bet-control-group">
+    <input id="betInput" class="uniform-box" type="number" placeholder="Bet (5–100 ZTC)" />
+    <button id="startBtn" class="uniform-box">🎮 Start Game</button>
+  </div>
 
-.title-section h2 {
-  font-size: 1.2rem;
-  margin: 0.5rem 0;
-  color: #aaa;
-}
+  <div class="choices-container">
+    <button class="choice-square" data-choice="1">✊</button>
+    <button class="choice-square" data-choice="2">✋</button>
+    <button class="choice-square" data-choice="3">✌️</button>
+  </div>
 
-.uniform-box {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
-  background-color: #00ffc6;
-  color: #000;
-  font-weight: bold;
-  margin: 0.3rem;
-  cursor: pointer;
-}
+  <div id="resultBox">Result will appear here...</div>
+  <div id="statsBox">Stats will appear here...</div>
+  <div id="status">Status: Ready</div>
 
-input[type="number"].uniform-box {
-  width: 200px;
-  background: #222;
-  color: #fff;
-  border: 1px solid #444;
-}
-
-.bet-control-group {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.choices-container {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.choice-square {
-  width: 60px;
-  height: 60px;
-  font-size: 2rem;
-  background-color: #00ffc6;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.choice-square:hover {
-  transform: scale(1.2);
-}
-
-#status, #resultBox, #statsBox {
-  margin-top: 1rem;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 1rem;
-  border-radius: 10px;
-  white-space: pre-wrap;
-  background-color: #222;
-  color: #eee;
-  max-height: 160px;
-  overflow-y: auto;
-}
-
-body.light-theme #status,
-body.light-theme #resultBox,
-body.light-theme #statsBox {
-  background-color: #fff;
-  color: #111;
-}
+  <script src="script.js"></script>
+</body>
+</html>
