@@ -158,7 +158,7 @@ async function makeChoice(choice) {
     const receipt = await tx.wait();
 
     const event = receipt.events.find(e => e.event === "GameResolved" || e.event === "Draw");
-    const choiceMap = { 1: "Rock", 2: "Paper", 3: "Scissors" };
+    const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
 
     if (event && event.args) {
       const { playerChoice, botChoice, result } = event.args;
@@ -167,11 +167,11 @@ async function makeChoice(choice) {
         result === "Lose" ? "😢 You lose!" :
         "🤝 It's a draw!";
 
-      const summary = `🤖 You chose ${choiceMap[playerChoice]}, Bot chose ${choiceMap[botChoice]}.\nResult: ${resultMsg}`;
+      const summary = `🤖 You chose ${emojiMap[playerChoice]}\n🕹 Bot chose ${emojiMap[botChoice]}\n🎯 Result: ${resultMsg}`;
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
-      typeResult("✅ Transaction confirmed — waiting for result...");
+      typeResult("✅ Transaction successful — awaiting result...");
     }
 
     await showPlayerStats();
@@ -193,18 +193,17 @@ async function makeChoice(choice) {
 async function showPlayerStats() {
   try {
     const stats = await contract.playerStats(userAccount);
-    const { wins, losses, draws, totalGames } = stats;
+    const { wins, losses, draws } = stats;
 
     const statsText = `
 🧾 Your Stats:
 Wins: ${wins}
 Losses: ${losses}
 Draws: ${draws}
-Total Games: ${totalGames}
     `;
     document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
     console.error("Stats error:", err);
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
   }
-  }
+}
