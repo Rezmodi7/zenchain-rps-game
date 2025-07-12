@@ -80,11 +80,6 @@ function typeResult(text) {
   type();
 }
 
-function toggleTheme() {
-  document.body.classList.toggle("dark-theme");
-  document.body.classList.toggle("light-theme");
-}
-
 function toggleWallet() {
   if (userAccount) {
     provider = null;
@@ -101,12 +96,18 @@ function toggleWallet() {
 
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("Please install MetaMask");
+    alert("🦊 Please install MetaMask to play ZenChain!");
+    updateStatus("MetaMask not found");
     return;
   }
 
   try {
-    await ethereum.request({ method: "eth_requestAccounts" });
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+    if (!accounts || !accounts[0]) {
+      updateStatus("❌ No account found");
+      return;
+    }
+
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
     userAccount = await signer.getAddress();
@@ -114,14 +115,15 @@ async function connectWallet() {
 
     const balance = await provider.getBalance(userAccount);
     const ztc = ethers.utils.formatEther(balance);
+
     document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
     document.getElementById("connectBtn").innerText = "🔌 Disconnect";
-    updateStatus("Wallet connected");
+    updateStatus("✅ Wallet connected successfully");
 
     await showPlayerStats();
   } catch (err) {
-    console.error(err);
-    updateStatus("Connection failed");
+    console.error("Connection Error:", err);
+    updateStatus("Connection failed: " + (err.message || ""));
   }
 }
 
@@ -147,14 +149,12 @@ async function startGame() {
 
   updateStatus("Starting game...");
   try {
-    console.log("🚀 Sending value:", valueToSend.toString());
     const tx = await contract.startGame({ value: valueToSend });
     await tx.wait();
     updateStatus("🎮 Game started! Choose your move.");
   } catch (err) {
     console.error("StartGame error:", err);
     let msg = "❌ Failed to start game.";
-
     const reason = (err.reason || err.message || "").toLowerCase();
 
     if (reason.includes("already in game")) {
@@ -186,7 +186,7 @@ async function makeChoice(choice) {
     const event = receipt.events.find(e => e.event === "GameResolved");
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
 
-    if (event && event.args && event.args.playerChoice && event.args.botChoice) {
+    if (event && event.args) {
       const { playerChoice, botChoice, result } = event.args;
 
       const resultMsg =
@@ -198,7 +198,7 @@ async function makeChoice(choice) {
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
-      typeResult("✅ Transaction confirmed.\nWaiting for bot's move to be revealed...");
+      typeResult("✅ Transaction confirmed.\nWaiting for bot's move...");
       updateStatus("Awaiting result");
     }
 
@@ -206,7 +206,6 @@ async function makeChoice(choice) {
   } catch (err) {
     console.error("Choice error:", err);
     let msg = "⚠️ Unexpected error";
-
     const reason = (err.reason || err.message || "").toLowerCase();
 
     if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
