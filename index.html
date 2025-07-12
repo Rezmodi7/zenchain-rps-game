@@ -9,7 +9,6 @@
 </head>
 <body class="dark-theme">
 
-  <!-- Toggle theme button -->
   <button onclick="toggleTheme()">🌓 Toggle Theme</button>
 
   <!-- Header with logos -->
@@ -27,25 +26,24 @@
   <!-- Wallet section -->
   <button id="connectBtn">🔌 Connect Wallet</button>
   <p id="walletAddr">Wallet: Not connected</p>
-  <span id="walletAddress"></span>
 
-  <!-- Betting input and start button -->
+  <!-- Betting input -->
   <div>
     <input type="number" id="betInput" min="5" max="100" placeholder="Bet (5 – 100 ZTC)"/>
     <button id="startBtn">🎮 Start Game</button>
   </div>
 
-  <!-- Choices -->
+  <!-- Game choices -->
   <div>
     <button class="choice-btn" data-choice="1">🪨 Rock</button>
     <button class="choice-btn" data-choice="2">📄 Paper</button>
     <button class="choice-btn" data-choice="3">✂️ Scissors</button>
   </div>
 
-  <!-- Result display -->
+  <!-- Result -->
   <div id="resultBox">Game results will appear here</div>
 
-  <!-- Stats section -->
+  <!-- Stats -->
   <button onclick="showPlayerStats()">🎮 View My Stats</button>
   <pre id="statsBox">Player stats will be shown here</pre>
 
