@@ -4,102 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ZenChain | RPS Game</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      text-align: center;
-      padding: 2rem;
-      background-color: #111;
-      color: #eee;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .logo-img {
-      height: 60px;
-      max-width: 100%;
-    }
-
-    .title-section h1 {
-      font-size: 2.2rem;
-      margin: 0;
-      color: #00ffc6;
-    }
-
-    .title-section h2 {
-      font-size: 1.2rem;
-      margin: 0.5rem 0;
-      color: #eee;
-    }
-
-    button, input {
-      padding: 0.6rem 1.2rem;
-      margin: 0.4rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: none;
-      background-color: #00ffc6;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    input[type="number"] {
-      width: 180px;
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-    }
-
-    .choice-btn {
-      font-size: 1.3rem;
-      transition: transform 0.2s ease;
-    }
-
-    .choice-btn:hover {
-      transform: scale(1.2);
-    }
-
-    #status, #resultBox, #statsBox {
-      margin-top: 1.2rem;
-      font-size: 1.1rem;
-      font-weight: bold;
-      background-color: #222;
-      padding: 1rem;
-      border-radius: 10px;
-      white-space: pre-wrap;
-    }
-
-    #walletAddress {
-      display: block;
-      font-family: monospace;
-      margin-top: 0.5rem;
-      word-break: break-all;
-      color: #00ffc6;
-    }
-
-    @media (max-width: 600px) {
-      .logo-img {
-        height: 40px;
-      }
-
-      .title-section h1 {
-        font-size: 1.8rem;
-      }
-
-      .title-section h2 {
-        font-size: 1rem;
-      }
-    }
-  </style>
 </head>
-<body>
+<body class="dark-theme">
+
+  <!-- Toggle theme button -->
+  <button onclick="toggleTheme()">🌓 Toggle Theme</button>
 
   <!-- Header with logos -->
   <header>
@@ -136,12 +47,11 @@
 
   <!-- Stats section -->
   <button onclick="showPlayerStats()">🎮 View My Stats</button>
-  <pre id="statsBox" class="mt-2 p-2 bg-gray-100 rounded-md text-sm">Player stats will be shown here</pre>
+  <pre id="statsBox">Player stats will be shown here</pre>
 
   <!-- Status -->
   <p id="status">Status: —</p>
 
-  <!-- Script -->
   <script src="script.js"></script>
 </body>
 </html>
