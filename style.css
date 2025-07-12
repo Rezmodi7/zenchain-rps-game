@@ -79,6 +79,16 @@ input[type="number"] {
 #resultDisplay.lose { color: #ff4040; }
 #resultDisplay.draw { color: #ffc107; }
 
+/* آدرس کیف‌پول با ظاهر منظم و فنی */
+#walletAddress {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  font-family: monospace;
+}
+
 @media (max-width: 600px) {
   .choice-img {
     width: 70px;
