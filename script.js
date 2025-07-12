@@ -157,11 +157,12 @@ async function makeChoice(choice) {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
-    const event = receipt.events.find(e => e.event === "GameResolved" || e.event === "Draw");
+    const event = receipt.events.find(e => e.event === "GameResolved");
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
 
-    if (event && event.args) {
+    if (event && event.args && event.args.playerChoice && event.args.botChoice) {
       const { playerChoice, botChoice, result } = event.args;
+
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
@@ -171,7 +172,8 @@ async function makeChoice(choice) {
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
-      typeResult("✅ Transaction successful — awaiting result...");
+      typeResult("✅ Transaction confirmed — bot's response not found or result pending.");
+      updateStatus("Waiting for result");
     }
 
     await showPlayerStats();
