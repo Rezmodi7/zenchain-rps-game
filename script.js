@@ -80,6 +80,11 @@ function typeResult(text) {
   type();
 }
 
+function toggleTheme() {
+  document.body.classList.toggle("dark-theme");
+  document.body.classList.toggle("light-theme");
+}
+
 function toggleWallet() {
   if (userAccount) {
     provider = null;
@@ -194,7 +199,7 @@ async function makeChoice(choice) {
         result === "Lose" ? "😢 You lose!" :
         "🤝 It's a draw!";
 
-      const summary = `🤖 You chose ${emojiMap[playerChoice]}\n🕹 Bot chose ${emojiMap[botChoice]}\n🎯 Result: ${resultMsg}`;
+      const summary = `🧑 You chose ${emojiMap[playerChoice]}\n🤖 Bot chose ${emojiMap[botChoice]}\n🎯 Result: ${resultMsg}`;
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
@@ -223,10 +228,9 @@ async function showPlayerStats() {
     const { wins, losses, draws } = stats;
 
     const statsText = `
-🧾 Your Stats:
-Wins: ${wins}
-Losses: ${losses}
-Draws: ${draws}
+🏆 Wins: ${wins}
+💔 Losses: ${losses}
+🤝 Draws: ${draws}
     `;
     document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
