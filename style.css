@@ -13,7 +13,6 @@ body.light-theme {
   background-color: #fff;
   color: #111;
 }
-
 body.dark-theme #resultBox,
 body.dark-theme #statsBox,
 body.dark-theme #status {
@@ -68,6 +67,14 @@ input[type="number"].uniform-box {
   border: 1px solid #444;
 }
 
+.bet-control-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .choices-container {
   display: flex;
   justify-content: center;
@@ -85,7 +92,6 @@ input[type="number"].uniform-box {
   cursor: pointer;
   transition: transform 0.2s ease;
 }
-
 .choice-square:hover {
   transform: scale(1.2);
 }
@@ -142,4 +148,4 @@ input[type="number"].uniform-box {
     font-size: 0.9rem;
     padding: 0.7rem;
   }
-}
+  }
