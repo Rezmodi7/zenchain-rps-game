@@ -1,7 +1,7 @@
-const CONTRACT_ADDRESS = "0x0cC77c746f3ee03B074Ee836c2cC83DB6204b8eD";
+const CONTRACT_ADDRESS = "0x3A059C4A7e0FD7700cDC3Ce2fD779F5d344880Ce";
 
 const CONTRACT_ABI = [
-	{
+{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
@@ -30,6 +30,13 @@ const CONTRACT_ABI = [
 		],
 		"name": "Draw",
 		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "fundContract",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -127,10 +134,44 @@ const CONTRACT_ABI = [
 		"type": "function"
 	},
 	{
+		"stateMutability": "payable",
+		"type": "fallback"
+	},
+	{
 		"inputs": [],
 		"name": "withdraw",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	},
+	{
+		"inputs": [],
+		"name": "getContractBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "maxBet",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -190,10 +231,10 @@ const CONTRACT_ABI = [
 	}
 ]
 
+
 let provider, signer, contract, readOnlyContract;
 let currentAccount = null;
 
-// DOM Elements
 const walletStatus = document.getElementById("walletStatus");
 const accountAddress = document.getElementById("accountAddress");
 const accountBalance = document.getElementById("accountBalance");
@@ -219,141 +260,102 @@ const CHOICES = {
 };
 
 function weiToZTC(wei) {
-    return ethers.utils.formatEther(wei || "0");
+    if (!wei) return "0";
+    return ethers.utils.formatEther(wei);
 }
 
 async function initDapp() {
     if (typeof window.ethereum !== 'undefined') {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         readOnlyContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-
         walletStatus.textContent = "MetaMask Detected";
         connectWalletBtn.style.display = "block";
 
-        try {
-            const accounts = await provider.listAccounts();
-            if (accounts.length > 0) {
-                await connectWallet(accounts[0]);
-            }
-        } catch (error) {
-            console.warn("Pre-connect failed:", error);
-        }
-
-        try {
-            await updateMinBet();
-        } catch (e) {
-            console.warn("Failed to load minBet initially:", e);
+        const accounts = await provider.listAccounts();
+        if (accounts.length > 0) {
+            await connectWallet(accounts[0]);
         }
     } else {
-        walletStatus.textContent = "MetaMask not detected";
-        statusMessage.textContent = "Install MetaMask to continue.";
+        walletStatus.textContent = "MetaMask not detected.";
+        connectWalletBtn.style.display = "none";
+        statusMessage.textContent = "MetaMask is required.";
     }
 }
 
 async function connectWallet(accountFromPreconnect = null) {
     try {
-        let accounts = accountFromPreconnect ? [accountFromPreconnect] : await window.ethereum.request({ method: "eth_requestAccounts" });
+        let accounts = [];
+        if (accountFromPreconnect) {
+            accounts = [accountFromPreconnect];
+        } else {
+            accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        }
 
         currentAccount = accounts[0];
         signer = provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-        accountAddress.textContent = currentAccount;
         walletStatus.textContent = "Connected";
         connectWalletBtn.textContent = "Wallet Connected";
         connectWalletBtn.disabled = true;
+        accountAddress.textContent = currentAccount;
 
         gameControls.style.display = "block";
-        statusMessage.textContent = "Wallet connected. Ready to play.";
+        await updateBalance();
+        await checkGameState();
 
         setupEventListeners();
-        await updateBalance();
-
-        try {
-            await updateMinBet();
-        } catch (err) {
-            console.warn("updateMinBet failed:", err);
-        }
-
-        try {
-            await checkGameState();
-        } catch (err) {
-            console.warn("checkGameState failed:", err);
-        }
-
     } catch (err) {
-        console.error("Connection failed:", err);
         walletStatus.textContent = "Error Connecting";
-        statusMessage.textContent = `Wallet connection failed: ${err.message}`;
-        connectWalletBtn.textContent = "Connect Wallet";
-        connectWalletBtn.disabled = false;
+        statusMessage.textContent = `Error: ${err.message.split('\n')[0]}`;
     }
 }
 
 connectWalletBtn.addEventListener("click", () => connectWallet());
 
 async function updateBalance() {
-    try {
-        const balance = await provider.getBalance(currentAccount);
-        accountBalance.textContent = `${parseFloat(weiToZTC(balance)).toFixed(4)} ZTC`;
-    } catch (err) {
-        console.warn("Balance fetch failed:", err);
-        accountBalance.textContent = "Error";
-    }
-}
-
-async function updateMinBet() {
-    const minBetWei = await readOnlyContract.minBet();
-    const minBet = parseFloat(weiToZTC(minBetWei)).toFixed(0);
-    betAmountInput.min = minBet;
-    if (parseFloat(betAmountInput.value) < minBet) {
-        betAmountInput.value = minBet;
+    if (currentAccount && provider) {
+        const balanceWei = await provider.getBalance(currentAccount);
+        accountBalance.textContent = `${parseFloat(weiToZTC(balanceWei)).toFixed(4)} ZTC`;
     }
 }
 
 async function checkGameState() {
     const game = await contract.playerGames(currentAccount);
     if (game.inGame) {
-        statusMessage.textContent = "You're in a game. Make your choice!";
-        startGameBtn.disabled = true;
-        betAmountInput.disabled = true;
+        statusMessage.textContent = "You're in an active game.";
         makeChoiceHeading.style.display = "block";
         choiceButtons.style.display = "flex";
+        startGameBtn.disabled = true;
+        betAmountInput.disabled = true;
     } else {
-        statusMessage.textContent = "Ready to start a new game.";
-        startGameBtn.disabled = false;
-        betAmountInput.disabled = false;
+        statusMessage.textContent = "Start a new game.";
         makeChoiceHeading.style.display = "none";
         choiceButtons.style.display = "none";
+        startGameBtn.disabled = false;
+        betAmountInput.disabled = false;
     }
 }
 
 startGameBtn.addEventListener("click", async () => {
-    const bet = parseFloat(betAmountInput.value);
-    if (isNaN(bet)) return alert("Enter a valid bet.");
-
-    try {
-        statusMessage.textContent = "Starting game...";
-        const tx = await contract.startGame({ value: ethers.utils.parseEther(bet.toString()) });
-        await tx.wait();
-        makeChoiceHeading.style.display = "block";
-        choiceButtons.style.display = "flex";
-        statusMessage.textContent = "Game started. Choose your move.";
-        await updateBalance();
-    } catch (err) {
-        console.error("Start game failed:", err);
-        statusMessage.textContent = "Start game failed.";
+    const amount = parseFloat(betAmountInput.value);
+    if (isNaN(amount) || amount < 5 || amount > 100) {
+        alert("Bet must be between 5 and 100 ZTC.");
+        return;
     }
+
+    statusMessage.textContent = "Starting game... Confirm in wallet.";
+    const tx = await contract.startGame({ value: ethers.utils.parseEther(amount.toString()) });
+    await tx.wait();
+
+    await updateBalance();
+    await checkGameState();
 });
 
-const makeChoice = async (choice) => {
-    try {
-        statusMessage.textContent = "Submitting choice...";
-        await contract.makeChoice(choice);
-    } catch (err) {
-        console.warn("Choice failed:", err);
-        statusMessage.textContent = "Failed to submit choice.";
-    }
+const makeChoice = async (index) => {
+    const tx = await contract.makeChoice(index);
+    await tx.wait();
+    statusMessage.textContent = "Waiting for result...";
 };
 
 rockBtn.addEventListener("click", () => makeChoice(1));
@@ -362,32 +364,45 @@ scissorsBtn.addEventListener("click", () => makeChoice(3));
 
 function setupEventListeners() {
     contract.on("GameResolved", async (player, playerChoice, botChoice, result, payout) => {
-        if (player.toLowerCase() !== currentAccount.toLowerCase()) return;
+        if (player.toLowerCase() === currentAccount.toLowerCase()) {
+            playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
+            botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
+            resultDisplay.textContent = `Result: ${result}`;
 
-        playerChoiceDisplay.textContent = `You: ${CHOICES[playerChoice]}`;
-        botChoiceDisplay.textContent = `Bot: ${CHOICES[botChoice]}`;
-        resultDisplay.textContent = `Result: ${result}`;
+            playerChoiceDisplay.style.display = "block";
+            botChoiceDisplay.style.display = "block";
+            resultDisplay.style.display = "block";
 
-        playerChoiceDisplay.style.display = "block";
-        botChoiceDisplay.style.display = "block";
-        resultDisplay.style.display = "block";
+            statusMessage.textContent = result === "Win" ? `🎉 You won ${weiToZTC(payout)} ZTC!`
+                : result === "Lose" ? `😞 You lost.` : `🤝 It's a draw!`;
 
-        await updateBalance();
-        await checkGameState();
-    });
+            makeChoiceHeading.style.display = "none";
+            choiceButtons.style.display = "none";
+            startGameBtn.disabled = false;
+            betAmountInput.disabled = false;
 
-    window.ethereum.on('accountsChanged', async (accounts) => {
-        if (accounts.length > 0) {
-            await connectWallet(accounts[0]);
-        } else {
-            currentAccount = null;
-            walletStatus.textContent = "Disconnected";
-            connectWalletBtn.textContent = "Connect Wallet";
-            connectWalletBtn.disabled = false;
+            await updateBalance();
+            await checkGameState();
         }
     });
 
-    window.ethereum.on('chainChanged', () => window.location.reload());
+    contract.on("Draw", async (player, playerChoice, botChoice) => {
+        if (player.toLowerCase() === currentAccount.toLowerCase()) {
+            playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
+            botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
+            resultDisplay.textContent = "Result: It's a draw.";
+
+            playerChoiceDisplay.style.display = "block";
+            botChoiceDisplay.style.display = "block";
+            resultDisplay.style.display = "block";
+
+            makeChoiceHeading.style.display = "block";
+            choiceButtons.style.display = "flex";
+        }
+    });
+
+    window.ethereum.on("accountsChanged", () => window.location.reload());
+    window.ethereum.on("chainChanged", () => window.location.reload());
 }
 
 window.addEventListener("DOMContentLoaded", initDapp);
