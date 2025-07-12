@@ -79,7 +79,6 @@ input[type="number"] {
 #resultDisplay.lose { color: #ff4040; }
 #resultDisplay.draw { color: #ffc107; }
 
-/* آدرس کیف‌پول با ظاهر منظم و فنی */
 #walletAddress {
   max-width: 100%;
   overflow: hidden;
