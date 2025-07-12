@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wallet Connection Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4caf50;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #999;
+    }
+    p {
+      margin: 10px 0;
+    }
+    code {
+      background: #eee;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Wallet Connection Test</h2>
+    <p>Status: <code id="status">Waiting...</code></p>
+    <p>Address: <code id="address">N/A</code></p>
+    <p>Balance: <code id="balance">N/A</code></p>
+    <button id="connectBtn">Connect Wallet</button>
+  </div>
+
+  <script src="./ethers.min.js"></script>
+  <script>
+    const status = document.getElementById("status");
+    const address = document.getElementById("address");
+    const balance = document.getElementById("balance");
+    const connectBtn = document.getElementById("connectBtn");
+
+    let provider, signer;
+
+    async function connectWallet() {
+      if (typeof window.ethereum === "undefined") {
+        status.textContent = "MetaMask not found.";
+        connectBtn.disabled = true;
+        return;
+      }
+
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        const userAddress = await signer.getAddress();
+        const userBalance = await provider.getBalance(userAddress);
+        status.textContent = "Connected ✅";
+        address.textContent = userAddress;
+        balance.textContent = ethers.utils.formatEther(userBalance) + " ETH";
+        connectBtn.disabled = true;
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+        console.error(err);
+      }
+    }
+
+    connectBtn.addEventListener("click", connectWallet);
+  </script>
+</body>
+</html>
