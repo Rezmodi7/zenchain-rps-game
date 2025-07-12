@@ -131,23 +131,43 @@ async function startGame() {
     return;
   }
 
-  const betRaw = document.getElementById("betInput").value.trim();
-  const bet = Number(betRaw);
-  console.log("Bet amount entered:", bet);
-
-  if (!bet || isNaN(bet) || bet < 5 || bet > 100) {
-    updateStatus("Invalid bet amount. Must be between 5 and 100 ZTC.");
+  const betRaw = document.getElementById("betInput").value;
+  if (!betRaw || isNaN(betRaw)) {
+    updateStatus("⚠️ Please enter a valid bet amount.");
     return;
   }
 
+  const bet = parseFloat(betRaw);
+  if (bet < 5 || bet > 100) {
+    updateStatus("⚠️ Bet must be between 5 and 100 ZTC.");
+    return;
+  }
+
+  const valueToSend = ethers.utils.parseUnits(bet.toString(), "ether");
+
   updateStatus("Starting game...");
   try {
-    const tx = await contract.startGame({ value: ethers.utils.parseEther(bet.toString()) });
+    console.log("🚀 Sending value:", valueToSend.toString());
+    const tx = await contract.startGame({ value: valueToSend });
     await tx.wait();
-    updateStatus("Game started! Choose your move");
+    updateStatus("🎮 Game started! Choose your move.");
   } catch (err) {
-    console.error("StartGame Error:", err);
-    typeResult("❌ Failed to start game. Check bet amount, wallet balance, or contract connection.");
+    console.error("StartGame error:", err);
+    let msg = "❌ Failed to start game.";
+
+    const reason = (err.reason || err.message || "").toLowerCase();
+
+    if (reason.includes("already in game")) {
+      msg = "⏳ You already started a game.\nPlease choose your move.";
+    } else if (reason.includes("exceeded daily transaction limit")) {
+      msg = "🚫 You’ve played 10 times in the last 24 hours.\nCome back after 03:30 AM (Tehran time)!";
+    } else if (reason.includes("insufficient")) {
+      msg = "💰 Not enough balance to start the game.";
+    } else if (reason.includes("invalid")) {
+      msg = "⚠️ Invalid bet or contract condition.";
+    }
+
+    typeResult(msg);
     updateStatus("Transaction failed");
   }
 }
@@ -184,13 +204,14 @@ async function makeChoice(choice) {
 
     await showPlayerStats();
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Choice error:", err);
     let msg = "⚠️ Unexpected error";
+
     const reason = (err.reason || err.message || "").toLowerCase();
 
     if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
     else if (reason.includes("already")) msg = "⏳ You are already in a game.";
-    else if (reason.includes("not started")) msg = "Start the game before choosing.";
+    else if (reason.includes("not started")) msg = "⚠️ Start the game before choosing.";
 
     typeResult(msg);
     updateStatus(msg);
