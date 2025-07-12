@@ -10,7 +10,17 @@ contract RockPaperScissors {
         bool inGame;
     }
 
+    struct PlayerStats {
+        uint256 wins;
+        uint256 losses;
+        uint256 draws;
+        uint256 totalGames;
+        uint256 lastPlayedDay;
+        uint256 playsToday;
+    }
+
     mapping(address => GameState) public playerGames;
+    mapping(address => PlayerStats) public playerStats;
 
     uint256 public minBet = 5 ether;
     uint256 public maxBet = 100 ether;
@@ -21,36 +31,34 @@ contract RockPaperScissors {
     event GameResolved(address indexed player, Choice playerChoice, Choice botChoice, string result, uint256 payout);
     event Draw(address indexed player, Choice playerChoice, Choice botChoice);
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this.");
-        _;
-    }
-
-    modifier onlyInGame() {
-        require(playerGames[msg.sender].inGame, "You are not in an active game.");
-        _;
-    }
-
-    modifier onlyNotInGame() {
-        require(!playerGames[msg.sender].inGame, "You are already in a game.");
-        _;
-    }
-
     constructor() {
         owner = msg.sender;
     }
 
-    receive() external payable {}
-    fallback() external payable {}
+    modifier onlyInGame() {
+        require(playerGames[msg.sender].inGame == true, "Not in game");
+        _;
+    }
 
-    function fundContract() public payable {}
-    function getContractBalance() public view returns (uint256) {
-        return address(this).balance;
+    modifier onlyNotInGame() {
+        require(playerGames[msg.sender].inGame == false, "Already in game");
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
     }
 
     function startGame() public payable onlyNotInGame {
-        require(msg.value >= minBet, "Minimum bet is 5 ZTC.");
-        require(msg.value <= maxBet, "Maximum bet is 100 ZTC.");
+        require(msg.value >= minBet && msg.value <= maxBet, "Bet must be between min and max");
+
+        uint256 today = block.timestamp / 1 days;
+        if (playerStats[msg.sender].lastPlayedDay < today) {
+            playerStats[msg.sender].lastPlayedDay = today;
+            playerStats[msg.sender].playsToday = 0;
+        }
+        require(playerStats[msg.sender].playsToday < 10, "Daily limit reached");
 
         playerGames[msg.sender] = GameState({
             playerChoice: Choice.None,
@@ -62,9 +70,9 @@ contract RockPaperScissors {
     }
 
     function makeChoice(Choice _playerChoice) public payable onlyInGame {
-        require(_playerChoice != Choice.None, "Invalid choice.");
-        require(playerGames[msg.sender].playerChoice == Choice.None, "Already chose.");
-        require(msg.value == 0, "No extra payment needed.");
+        require(_playerChoice != Choice.None, "Invalid choice");
+        require(playerGames[msg.sender].playerChoice == Choice.None, "Already chosen");
+        require(msg.value == 0, "No additional funds required");
 
         playerGames[msg.sender].playerChoice = _playerChoice;
         emit PlayerChose(msg.sender, _playerChoice);
@@ -73,44 +81,64 @@ contract RockPaperScissors {
     }
 
     function _resolveGame(address _player) internal {
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(
-            block.timestamp,
-            block.prevrandao,
-            _player,
-            block.number
-        ))) % 3;
+        uint256 random = uint256(
+            keccak256(abi.encodePacked(block.timestamp, block.prevrandao, _player, block.number))
+        ) % 3;
 
-        Choice botChoice = Choice(randomNumber + 1); // Rock=1, Paper=2, Scissors=3
+        Choice botChoice = Choice(random + 1); // Rock(1), Paper(2), Scissors(3)
         Choice playerChoice = playerGames[_player].playerChoice;
         uint256 bet = playerGames[_player].betAmount;
+
         string memory result;
         uint256 payout = 0;
 
         if (playerChoice == botChoice) {
             playerGames[_player].playerChoice = Choice.None;
             result = "Draw";
+            playerStats[_player].draws++;
             emit Draw(_player, playerChoice, botChoice);
-        } else if (
+            return;
+        }
+
+        playerStats[_player].totalGames++;
+        playerStats[_player].playsToday++;
+
+        bool win = (
             (playerChoice == Choice.Rock && botChoice == Choice.Scissors) ||
             (playerChoice == Choice.Paper && botChoice == Choice.Rock) ||
             (playerChoice == Choice.Scissors && botChoice == Choice.Paper)
-        ) {
+        );
+
+        if (win) {
             result = "Win";
             payout = bet * 2;
-            require(address(this).balance >= payout, "Contract has insufficient funds.");
+            playerStats[_player].wins++;
             (bool success, ) = payable(_player).call{value: payout}("");
-            require(success, "Transfer failed.");
-            playerGames[_player] = GameState(Choice.None, 0, false);
+            require(success, "Failed to send winnings");
         } else {
             result = "Lose";
-            playerGames[_player] = GameState(Choice.None, 0, false);
+            playerStats[_player].losses++;
         }
+
+        // Reset game state
+        playerGames[_player].inGame = false;
+        playerGames[_player].playerChoice = Choice.None;
+        playerGames[_player].betAmount = 0;
 
         emit GameResolved(_player, playerChoice, botChoice, result, payout);
     }
 
+    function fundContract() public payable {}
+
+    function getContractBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
     function withdraw() public onlyOwner {
         (bool success, ) = payable(owner).call{value: address(this).balance}("");
-        require(success, "Withdraw failed.");
+        require(success, "Withdraw failed");
     }
+
+    receive() external payable {}
+    fallback() external payable {}
 }
