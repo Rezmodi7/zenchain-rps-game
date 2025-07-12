@@ -9,12 +9,13 @@
 </head>
 <body class="dark-theme">
 
-  <button onclick="toggleTheme()">🌓 Toggle Theme</button>
+  <!-- Toggle Theme Button -->
+  <button class="uniform-box" onclick="toggleTheme()">🌓</button>
 
-  <!-- Header with logos -->
+  <!-- Header -->
   <header>
-    <img src="assets/zenchain-logo.png" alt="ZenChain Logo Left" class="logo-img"/>
-    <img src="assets/zenchain-logo.png" alt="ZenChain Logo Right" class="logo-img"/>
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
   </header>
 
   <!-- Title -->
@@ -23,31 +24,25 @@
     <h2>Rock Paper Scissors Game</h2>
   </div>
 
-  <!-- Wallet section -->
-  <button id="connectBtn">🔌 Connect Wallet</button>
+  <!-- Wallet Section -->
+  <button class="uniform-box" id="connectBtn">🔌 Connect Wallet</button>
   <p id="walletAddr">Wallet: Not connected</p>
 
-  <!-- Betting input -->
-  <div>
-    <input type="number" id="betInput" min="5" max="100" placeholder="Bet (5 – 100 ZTC)"/>
-    <button id="startBtn">🎮 Start Game</button>
+  <!-- Bet Input -->
+  <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)"/>
+  <button class="uniform-box" id="startBtn">🎮</button>
+
+  <!-- Game Choices with Emojis -->
+  <div class="choices-container">
+    <button class="choice-square" data-choice="1">✊</button>
+    <button class="choice-square" data-choice="2">✋</button>
+    <button class="choice-square" data-choice="3">✌️</button>
   </div>
 
-  <!-- Game choices -->
-  <div>
-    <button class="choice-btn" data-choice="1">🪨 Rock</button>
-    <button class="choice-btn" data-choice="2">📄 Paper</button>
-    <button class="choice-btn" data-choice="3">✂️ Scissors</button>
-  </div>
-
-  <!-- Result -->
+  <!-- Results and Stats -->
   <div id="resultBox">Game results will appear here</div>
-
-  <!-- Stats -->
-  <button onclick="showPlayerStats()">🎮 View My Stats</button>
+  <button class="uniform-box" onclick="showPlayerStats()">📊</button>
   <pre id="statsBox">Player stats will be shown here</pre>
-
-  <!-- Status -->
   <p id="status">Status: —</p>
 
   <script src="script.js"></script>
