@@ -108,6 +108,8 @@ input[type="number"].uniform-box {
   padding: 1rem;
   border-radius: 10px;
   white-space: pre-wrap;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
 @media (max-width: 600px) {
@@ -116,8 +118,8 @@ input[type="number"].uniform-box {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
+    justify-content: flex-start;
+    overflow-y: auto;
   }
 
   .logo-img {
@@ -148,9 +150,10 @@ input[type="number"].uniform-box {
   }
 
   #resultBox, #statsBox, #status {
-    height: 70px;
-    overflow-y: auto;
     font-size: 0.9rem;
     padding: 0.7rem;
+    margin-top: 0.5rem;
+    max-height: 140px;
+    overflow-y: auto;
   }
 }
