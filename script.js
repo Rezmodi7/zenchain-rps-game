@@ -18,7 +18,9 @@ const ABI = [
     "type": "function"
   },
   {
-    "inputs": [ { "internalType": "address", "name": "", "type": "address" } ],
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
     "name": "playerStats",
     "outputs": [
       { "internalType": "uint256", "name": "wins", "type": "uint256" },
@@ -129,9 +131,12 @@ async function startGame() {
     return;
   }
 
-  const bet = +document.getElementById("betInput").value;
-  if (bet < 5 || bet > 100) {
-    updateStatus("Bet must be between 5 and 100 ZTC");
+  const betRaw = document.getElementById("betInput").value.trim();
+  const bet = Number(betRaw);
+  console.log("Bet amount entered:", bet);
+
+  if (!bet || isNaN(bet) || bet < 5 || bet > 100) {
+    updateStatus("Invalid bet amount. Must be between 5 and 100 ZTC.");
     return;
   }
 
@@ -141,8 +146,9 @@ async function startGame() {
     await tx.wait();
     updateStatus("Game started! Choose your move");
   } catch (err) {
-    console.error(err);
-    updateStatus("Failed to start game");
+    console.error("StartGame Error:", err);
+    typeResult("❌ Failed to start game. Check bet amount, wallet balance, or contract connection.");
+    updateStatus("Transaction failed");
   }
 }
 
@@ -157,14 +163,11 @@ async function makeChoice(choice) {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
+    const event = receipt.events.find(e => e.event === "GameResolved");
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
-    let playerChoice, botChoice, result;
 
-    const resolvedEvent = receipt.events.find(e => e.event === "GameResolved");
-    if (resolvedEvent?.args?.playerChoice && resolvedEvent?.args?.botChoice) {
-      playerChoice = resolvedEvent.args.playerChoice;
-      botChoice = resolvedEvent.args.botChoice;
-      result = resolvedEvent.args.result;
+    if (event && event.args && event.args.playerChoice && event.args.botChoice) {
+      const { playerChoice, botChoice, result } = event.args;
 
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
