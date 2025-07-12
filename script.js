@@ -50,7 +50,7 @@ const ABI = [
 let provider, signer, contract, userAccount;
 
 window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("connectBtn").onclick = connectWallet;
+  document.getElementById("connectBtn").onclick = toggleWallet;
   document.getElementById("startBtn").onclick = startGame;
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
@@ -60,7 +60,10 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStatus("Ready");
 });
 
-// Typing effect for game result
+function updateStatus(text) {
+  document.getElementById("status").innerText = `Status: ${text}`;
+}
+
 function typeResult(text) {
   const el = document.getElementById("resultBox");
   el.textContent = "";
@@ -75,18 +78,25 @@ function typeResult(text) {
   type();
 }
 
-// Theme toggler
 function toggleTheme() {
   document.body.classList.toggle("dark-theme");
   document.body.classList.toggle("light-theme");
 }
 
-// Status updater
-function updateStatus(text) {
-  document.getElementById("status").innerText = `Status: ${text}`;
+function toggleWallet() {
+  if (userAccount) {
+    provider = null;
+    signer = null;
+    contract = null;
+    userAccount = null;
+    document.getElementById("walletAddr").innerText = "Wallet: Not connected";
+    document.getElementById("connectBtn").innerText = "🔌 Connect Wallet";
+    updateStatus("Disconnected");
+  } else {
+    connectWallet();
+  }
 }
 
-// Wallet connection
 async function connectWallet() {
   if (!window.ethereum) {
     alert("Please install MetaMask");
@@ -102,9 +112,8 @@ async function connectWallet() {
 
     const balance = await provider.getBalance(userAccount);
     const ztc = ethers.utils.formatEther(balance);
-
     document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
-    document.getElementById("connectBtn").innerText = "🔌 Connected";
+    document.getElementById("connectBtn").innerText = "🔌 Disconnect";
     updateStatus("Wallet connected");
 
     await showPlayerStats();
@@ -114,7 +123,6 @@ async function connectWallet() {
   }
 }
 
-// Start game with bet
 async function startGame() {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -138,7 +146,6 @@ async function startGame() {
   }
 }
 
-// Submit choice and handle result
 async function makeChoice(choice) {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
@@ -153,39 +160,36 @@ async function makeChoice(choice) {
     const event = receipt.events.find(e => e.event === "GameResolved" || e.event === "Draw");
     const choiceMap = { 1: "Rock", 2: "Paper", 3: "Scissors" };
 
-    if (event) {
+    if (event && event.args) {
       const { playerChoice, botChoice, result } = event.args;
-
-      const resultMessage =
+      const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
         "🤝 It's a draw!";
 
-      const summary = `🤖 You chose ${choiceMap[playerChoice]}, Bot chose ${choiceMap[botChoice]}.\nResult: ${resultMessage}`;
+      const summary = `🤖 You chose ${choiceMap[playerChoice]}, Bot chose ${choiceMap[botChoice]}.\nResult: ${resultMsg}`;
       typeResult(summary);
-      updateStatus(resultMessage);
+      updateStatus(resultMsg);
     } else {
-      typeResult("✅ Transaction successful, awaiting result...");
+      typeResult("✅ Transaction confirmed — waiting for result...");
     }
 
     await showPlayerStats();
   } catch (err) {
-    console.error("Error during play:", err);
-
-    let message = "⚠️ Unknown error occurred";
+    console.error("Error:", err);
+    let msg = "⚠️ Unexpected error";
     const reason = (err.reason || err.message || "").toLowerCase();
 
-    if (reason.includes("insufficient")) message = "❌ Wallet balance is insufficient.";
-    else if (reason.includes("already")) message = "⏳ You are already in a game.";
-    else if (reason.includes("draw")) message = "🤝 It's a draw!";
-    else if (reason.includes("not started")) message = "Please start the game first.";
+    if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
+    else if (reason.includes("already")) msg = "⏳ You are already in a game.";
+    else if (reason.includes("draw")) msg = "🤝 It's a draw!";
+    else if (reason.includes("not started")) msg = "Start the game before choosing.";
 
-    typeResult(message);
-    updateStatus(message);
+    typeResult(msg);
+    updateStatus(msg);
   }
 }
 
-// Display user stats
 async function showPlayerStats() {
   try {
     const stats = await contract.playerStats(userAccount);
@@ -200,7 +204,7 @@ Total Games: ${totalGames}
     `;
     document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
-    console.error("Failed to fetch player stats:", err);
+    console.error("Stats error:", err);
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
   }
-      }
+  }
