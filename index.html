@@ -1,40 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenChain Rock-Paper-Scissors</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="assets/zenchain-logo.png" type="image/png" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ZenChain Rock Paper Scissors</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    button, input {
+      padding: 0.6rem 1.2rem;
+      margin: 0.4rem;
+      font-size: 1rem;
+      border-radius: 8px;
+    }
+    .choice-btn {
+      font-size: 1.3rem;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo" />
-        <h1>Rock, Paper, Scissors on ZenChain</h1>
-        <div class="wallet-box">
-            <p>Status: <span id="walletStatus">Not connected</span></p>
-            <p>Account: <span id="accountAddress">N/A</span></p>
-            <p>Balance: <span id="accountBalance">N/A</span> ZTC</p>
-            <button id="connectWalletBtn">Connect Wallet</button>
-        </div>
-        <div id="gameControls" class="game-box" style="display: none;">
-            <label for="betAmount">Bet Amount (ZTC):</label>
-            <input type="number" id="betAmount" value="5" min="5" />
-            <button id="startGameBtn">Start Game</button>
-            <h2 id="makeChoiceHeading" style="display: none;">Choose Your Move</h2>
-            <div id="choiceButtons" class="choice-buttons" style="display: none;">
-                <img src="assets/rock.png" id="rockBtn" class="choice-img" alt="Rock" />
-                <img src="assets/paper.png" id="paperBtn" class="choice-img" alt="Paper" />
-                <img src="assets/scissors.png" id="scissorsBtn" class="choice-img" alt="Scissors" />
-            </div>
-            <div class="status-box">
-                <p id="statusMessage">Connect wallet to begin.</p>
-                <p id="playerChoiceDisplay" style="display: none;"></p>
-                <p id="botChoiceDisplay" style="display: none;"></p>
-                <p id="resultDisplay" style="display: none;"></p>
-            </div>
-        </div>
-    </div>
-    <script src="./ethers.min.js"></script>
-<script src="./script.js"></script> </body>
+  <h1>✊ ZenChain Rock Paper Scissors ✋</h1>
+  <button id="connectBtn">🔌 Connect Wallet</button>
+  <p id="walletAddr">Wallet: Not connected</p>
+  <div>
+    <input type="number" id="betInput" min="5" max="100" placeholder="Bet (5 – 100 ZTC)"/>
+    <button id="startBtn">🎮 Start Game</button>
+  </div>
+  <div>
+    <button class="choice-btn" data-choice="1">🪨</button>
+    <button class="choice-btn" data-choice="2">📄</button>
+    <button class="choice-btn" data-choice="3">✂️</button>
+  </div>
+  <p id="status">Status: —</p>
+
+  <script src="script.js"></script>
+</body>
 </html>
