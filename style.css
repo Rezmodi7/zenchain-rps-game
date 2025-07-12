@@ -9,16 +9,19 @@ body.dark-theme {
   background-color: #111;
   color: #eee;
 }
+
 body.light-theme {
   background-color: #fff;
   color: #111;
 }
+
 body.dark-theme #resultBox,
 body.dark-theme #statsBox,
 body.dark-theme #status {
   background-color: #222;
   color: #eee;
 }
+
 body.light-theme #resultBox,
 body.light-theme #statsBox,
 body.light-theme #status {
@@ -43,6 +46,7 @@ header {
   margin: 0;
   color: #00ffc6;
 }
+
 .title-section h2 {
   font-size: 1.2rem;
   margin: 0.5rem 0;
@@ -92,6 +96,7 @@ input[type="number"].uniform-box {
   cursor: pointer;
   transition: transform 0.2s ease;
 }
+
 .choice-square:hover {
   transform: scale(1.2);
 }
@@ -148,4 +153,4 @@ input[type="number"].uniform-box {
     font-size: 0.9rem;
     padding: 0.7rem;
   }
-  }
+}
