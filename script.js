@@ -157,11 +157,14 @@ async function makeChoice(choice) {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
-    const event = receipt.events.find(e => e.event === "GameResolved");
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
+    let playerChoice, botChoice, result;
 
-    if (event && event.args && event.args.playerChoice && event.args.botChoice) {
-      const { playerChoice, botChoice, result } = event.args;
+    const resolvedEvent = receipt.events.find(e => e.event === "GameResolved");
+    if (resolvedEvent?.args?.playerChoice && resolvedEvent?.args?.botChoice) {
+      playerChoice = resolvedEvent.args.playerChoice;
+      botChoice = resolvedEvent.args.botChoice;
+      result = resolvedEvent.args.result;
 
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
@@ -172,8 +175,8 @@ async function makeChoice(choice) {
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
-      typeResult("✅ Transaction confirmed — bot's response not found or result pending.");
-      updateStatus("Waiting for result");
+      typeResult("✅ Transaction confirmed.\nWaiting for bot's move to be revealed...");
+      updateStatus("Awaiting result");
     }
 
     await showPlayerStats();
@@ -184,7 +187,6 @@ async function makeChoice(choice) {
 
     if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
     else if (reason.includes("already")) msg = "⏳ You are already in a game.";
-    else if (reason.includes("draw")) msg = "🤝 It's a draw!";
     else if (reason.includes("not started")) msg = "Start the game before choosing.";
 
     typeResult(msg);
