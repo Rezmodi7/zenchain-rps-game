@@ -1,7 +1,13 @@
-const CONTRACT_ADDRESS = "0x3A059C4A7e0FD7700cDC3Ce2fD779F5d344880Ce";
+let userAccount;
+let contract;
+let provider;
+let signer;
 
-const CONTRACT_ABI = [
-{
+const contractAddress = "0x7Ca41FF431d6422B58Af9d15474484EDB7b50154";
+
+const ABI = [
+[
+	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
@@ -30,13 +36,6 @@ const CONTRACT_ABI = [
 		],
 		"name": "Draw",
 		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "fundContract",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -95,19 +94,6 @@ const CONTRACT_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "enum RockPaperScissors.Choice",
-				"name": "_playerChoice",
-				"type": "uint8"
-			}
-		],
-		"name": "makeChoice",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -127,26 +113,15 @@ const CONTRACT_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "startGame",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
 		"stateMutability": "payable",
 		"type": "fallback"
 	},
 	{
 		"inputs": [],
-		"name": "withdraw",
+		"name": "fundContract",
 		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"stateMutability": "payable",
-		"type": "receive"
+		"type": "function"
 	},
 	{
 		"inputs": [],
@@ -159,6 +134,19 @@ const CONTRACT_ABI = [
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum RockPaperScissors.Choice",
+				"name": "_playerChoice",
+				"type": "uint8"
+			}
+		],
+		"name": "makeChoice",
+		"outputs": [],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -228,181 +216,138 @@ const CONTRACT_ABI = [
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerStats",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "wins",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "losses",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "draws",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalGames",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lastPlayedDay",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "playsToday",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "startGame",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]
 
-
-let provider, signer, contract, readOnlyContract;
-let currentAccount = null;
-
-const walletStatus = document.getElementById("walletStatus");
-const accountAddress = document.getElementById("accountAddress");
-const accountBalance = document.getElementById("accountBalance");
-const connectWalletBtn = document.getElementById("connectWalletBtn");
-const startGameBtn = document.getElementById("startGameBtn");
-const betAmountInput = document.getElementById("betAmount");
-const gameControls = document.getElementById("gameControls");
-const makeChoiceHeading = document.getElementById("makeChoiceHeading");
-const choiceButtons = document.getElementById("choiceButtons");
-const rockBtn = document.getElementById("rockBtn");
-const paperBtn = document.getElementById("paperBtn");
-const scissorsBtn = document.getElementById("scissorsBtn");
-const statusMessage = document.getElementById("statusMessage");
-const playerChoiceDisplay = document.getElementById("playerChoiceDisplay");
-const botChoiceDisplay = document.getElementById("botChoiceDisplay");
-const resultDisplay = document.getElementById("resultDisplay");
-
-const CHOICES = {
-    0: "None",
-    1: "Rock",
-    2: "Paper",
-    3: "Scissors"
-};
-
-function weiToZTC(wei) {
-    if (!wei) return "0";
-    return ethers.utils.formatEther(wei);
-}
-
-async function initDapp() {
-    if (typeof window.ethereum !== 'undefined') {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        readOnlyContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-        walletStatus.textContent = "MetaMask Detected";
-        connectWalletBtn.style.display = "block";
-
-        const accounts = await provider.listAccounts();
-        if (accounts.length > 0) {
-            await connectWallet(accounts[0]);
-        }
-    } else {
-        walletStatus.textContent = "MetaMask not detected.";
-        connectWalletBtn.style.display = "none";
-        statusMessage.textContent = "MetaMask is required.";
-    }
-}
-
-async function connectWallet(accountFromPreconnect = null) {
+async function connectWallet() {
+  if (window.ethereum) {
     try {
-        let accounts = [];
-        if (accountFromPreconnect) {
-            accounts = [accountFromPreconnect];
-        } else {
-            accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        }
-
-        currentAccount = accounts[0];
-        signer = provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-        walletStatus.textContent = "Connected";
-        connectWalletBtn.textContent = "Wallet Connected";
-        connectWalletBtn.disabled = true;
-        accountAddress.textContent = currentAccount;
-
-        gameControls.style.display = "block";
-        await updateBalance();
-        await checkGameState();
-
-        setupEventListeners();
+      const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+      userAccount = accounts[0];
+      document.getElementById("walletAddress").innerText = `Wallet: ${userAccount}`;
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(contractAddress, ABI, signer);
+      document.getElementById("status").innerText = "✅ Connected to wallet";
     } catch (err) {
-        walletStatus.textContent = "Error Connecting";
-        statusMessage.textContent = `Error: ${err.message.split('\n')[0]}`;
+      console.error(err);
+      document.getElementById("status").innerText = "❌ Connection failed";
     }
+  } else {
+    document.getElementById("status").innerText = "🦊 Please install MetaMask!";
+  }
 }
 
-connectWalletBtn.addEventListener("click", () => connectWallet());
-
-async function updateBalance() {
-    if (currentAccount && provider) {
-        const balanceWei = await provider.getBalance(currentAccount);
-        accountBalance.textContent = `${parseFloat(weiToZTC(balanceWei)).toFixed(4)} ZTC`;
-    }
+function disconnectWallet() {
+  userAccount = null;
+  document.getElementById("walletAddress").innerText = "Wallet: Not connected";
+  document.getElementById("status").innerText = "🔌 Disconnected";
 }
 
-async function checkGameState() {
-    const game = await contract.playerGames(currentAccount);
-    if (game.inGame) {
-        statusMessage.textContent = "You're in an active game.";
-        makeChoiceHeading.style.display = "block";
-        choiceButtons.style.display = "flex";
-        startGameBtn.disabled = true;
-        betAmountInput.disabled = true;
-    } else {
-        statusMessage.textContent = "Start a new game.";
-        makeChoiceHeading.style.display = "none";
-        choiceButtons.style.display = "none";
-        startGameBtn.disabled = false;
-        betAmountInput.disabled = false;
-    }
+async function startGame() {
+  const bet = document.getElementById("betInput").value;
+  if (!bet || bet < 5 || bet > 100) {
+    document.getElementById("status").innerText = "❗ Bet must be between 5 and 100 ZTC.";
+    return;
+  }
+  const value = ethers.utils.parseEther(bet);
+  try {
+    const tx = await contract.startGame({ value });
+    await tx.wait();
+    document.getElementById("status").innerText = `🎮 Game started with ${bet} ZTC`;
+  } catch (error) {
+    console.error(error);
+    document.getElementById("status").innerText = "❌ Failed to start game";
+  }
 }
 
-startGameBtn.addEventListener("click", async () => {
-    const amount = parseFloat(betAmountInput.value);
-    if (isNaN(amount) || amount < 5 || amount > 100) {
-        alert("Bet must be between 5 and 100 ZTC.");
-        return;
-    }
+async function makeChoice(choice) {
+  if (!userAccount) {
+    document.getElementById("status").innerText = "🔌 Please connect your wallet first.";
+    return;
+  }
 
-    statusMessage.textContent = "Starting game... Confirm in wallet.";
-    const tx = await contract.startGame({ value: ethers.utils.parseEther(amount.toString()) });
+  const emoji = ["", "🪨", "📄", "✂️"];
+  const resultEmojis = {
+    "Win": "🏆 You win!",
+    "Lose": "💥 You lose.",
+    "Draw": "🤝 Draw! 🔁"
+  };
+
+  try {
+    const tx = await contract.makeChoice(choice, { value: 0 });
     await tx.wait();
 
-    await updateBalance();
-    await checkGameState();
-});
-
-const makeChoice = async (index) => {
-    const tx = await contract.makeChoice(index);
-    await tx.wait();
-    statusMessage.textContent = "Waiting for result...";
-};
-
-rockBtn.addEventListener("click", () => makeChoice(1));
-paperBtn.addEventListener("click", () => makeChoice(2));
-scissorsBtn.addEventListener("click", () => makeChoice(3));
-
-function setupEventListeners() {
-    contract.on("GameResolved", async (player, playerChoice, botChoice, result, payout) => {
-        if (player.toLowerCase() === currentAccount.toLowerCase()) {
-            playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
-            botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
-            resultDisplay.textContent = `Result: ${result}`;
-
-            playerChoiceDisplay.style.display = "block";
-            botChoiceDisplay.style.display = "block";
-            resultDisplay.style.display = "block";
-
-            statusMessage.textContent = result === "Win" ? `🎉 You won ${weiToZTC(payout)} ZTC!`
-                : result === "Lose" ? `😞 You lost.` : `🤝 It's a draw!`;
-
-            makeChoiceHeading.style.display = "none";
-            choiceButtons.style.display = "none";
-            startGameBtn.disabled = false;
-            betAmountInput.disabled = false;
-
-            await updateBalance();
-            await checkGameState();
-        }
+    contract.once("GameResolved", (player, playerChoice, botChoice, result, payout) => {
+      document.getElementById("status").innerText = `
+        You: ${emoji[playerChoice]} | Bot: ${emoji[botChoice]}
+        → ${resultEmojis[result] || result}
+      `;
     });
-
-    contract.on("Draw", async (player, playerChoice, botChoice) => {
-        if (player.toLowerCase() === currentAccount.toLowerCase()) {
-            playerChoiceDisplay.textContent = `You chose: ${CHOICES[playerChoice]}`;
-            botChoiceDisplay.textContent = `Bot chose: ${CHOICES[botChoice]}`;
-            resultDisplay.textContent = "Result: It's a draw.";
-
-            playerChoiceDisplay.style.display = "block";
-            botChoiceDisplay.style.display = "block";
-            resultDisplay.style.display = "block";
-
-            makeChoiceHeading.style.display = "block";
-            choiceButtons.style.display = "flex";
-        }
-    });
-
-    window.ethereum.on("accountsChanged", () => window.location.reload());
-    window.ethereum.on("chainChanged", () => window.location.reload());
-}
-
-window.addEventListener("DOMContentLoaded", initDapp);
+  } catch (error) {
+    console.error(error);
+    document.getElementById("status").innerText = "❌ Game failed or already in progress.";
+  }
+	}
