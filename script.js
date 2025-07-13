@@ -289,6 +289,8 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
+  const themeBtn = document.getElementById("themeBtn");
+  if (themeBtn) themeBtn.onclick = toggleTheme;
   document.body.classList.add("dark-theme");
   updateStatus("Ready");
 });
@@ -313,10 +315,7 @@ function typeResult(text) {
 
 function toggleWallet() {
   if (userAccount) {
-    provider = null;
-    signer = null;
-    contract = null;
-    userAccount = null;
+    provider = signer = contract = userAccount = null;
     document.getElementById("walletAddr").innerText = "Wallet: Not connected";
     document.getElementById("connectBtn").innerText = "🔌 Connect Wallet";
     updateStatus("Disconnected");
@@ -381,7 +380,6 @@ async function startGame() {
     updateStatus("Game started! Choose your move.");
   } catch (err) {
     gameStarted = false;
-
     const rawError = (
       err?.reason ||
       err?.message ||
@@ -390,23 +388,21 @@ async function startGame() {
       ""
     ).toLowerCase();
 
-    console.error("Error details:", rawError);
-
     let msg = "❌ Failed to start game.";
 
-    if (rawError.includes('execution reverted: "daily limit reached"')) {
-      msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
-    } else if (rawError.includes("execution reverted: bet must be between")) {
-      msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
-    } else if (rawError.includes("execution reverted: already in game")) {
-      msg = "⏳ You're already in a game. Make your move.";
-    } else if (rawError.includes("execution reverted: insufficient balance")) {
-      msg = "💰 Wallet balance is insufficient.";
+    if (rawError.includes("daily limit")) {
+      msg = "🚫 You've reached the daily limit (10 plays). Try again tomorrow.";
+    } else if (rawError.includes("bet must be between")) {
+      msg = "⚠️ Bet must be between 5 and 100 ZTC.";
+    } else if (rawError.includes("already in game")) {
+      msg = "⏳ You're already in a game. Please make your move.";
+    } else if (rawError.includes("insufficient balance")) {
+      msg = "💰 Insufficient wallet balance.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("StartGame error message:", msg);
+    console.error("StartGame Error:", msg);
   }
 }
 
@@ -469,21 +465,19 @@ async function makeChoice(choice) {
       ""
     ).toLowerCase();
 
-    console.error("Choice Error Raw:", rawError);
-
     let msg = "⚠️ Move submission failed.";
 
-    if (rawError.includes("execution reverted: not in game")) {
-      msg = "⚠️ You are not in a game. Start one first.";
-    } else if (rawError.includes("execution reverted: already chosen")) {
+    if (rawError.includes("not in game")) {
+      msg = "⚠️ You're not in a game. Please start one first.";
+    } else if (rawError.includes("already chosen")) {
       msg = "⏳ You've already made your move.";
     } else if (rawError.includes("insufficient")) {
-      msg = "💰 Wallet balance is insufficient.";
+      msg = "💰 Insufficient wallet balance.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("Choice error message:", msg);
+    console.error("Choice Error:", msg);
   }
 }
 
@@ -501,5 +495,17 @@ async function showPlayerStats() {
   } catch (err) {
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
     console.error("Stats error:", err);
+  }
+}
+
+// Theme toggler
+function toggleTheme() {
+  const body = document.body;
+  if (body.classList.contains("dark-theme")) {
+    body.classList.remove("dark-theme");
+    body.classList.add("light-theme");
+  } else {
+    body.classList.remove("light-theme");
+    body.classList.add("dark-theme");
   }
 }
