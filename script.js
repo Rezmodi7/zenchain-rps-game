@@ -1,7 +1,6 @@
 const contractAddress = "0xE3C87205e8E1F748D08A14F5C662D436505BD3da";
-
 const ABI = [
-	{
+{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
@@ -290,7 +289,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
-
   document.body.classList.add("dark-theme");
   updateStatus("Ready");
 });
@@ -362,13 +360,13 @@ async function connectWallet() {
 
 async function startGame() {
   if (!contract || !userAccount) {
-    updateStatus("Please connect wallet first");
+    updateStatus("Please connect your wallet first.");
     return;
   }
 
   const betRaw = document.getElementById("betInput").value;
   if (!betRaw || isNaN(betRaw)) {
-    updateStatus("⚠️ Please enter a valid bet amount.");
+    updateStatus("⚠️ Enter a valid bet amount.");
     return;
   }
 
@@ -385,44 +383,44 @@ async function startGame() {
     const tx = await contract.startGame({ value: valueToSend });
     await tx.wait();
     gameStarted = true;
-    updateStatus("🎮 Game started! Choose your move.");
+    updateStatus("Game started! Choose your move.");
   } catch (err) {
     gameStarted = false;
-    let msg = "❌ Failed to start game.";
     const reason = (err.reason || err.message || "").toLowerCase();
+    let msg = "❌ Failed to start game.";
 
     if (reason.includes("already in game")) {
-      msg = "⏳ You already started a game.\nPlease choose your move.";
+      msg = "You are already in a game. Make your move.";
     } else if (reason.includes("daily limit")) {
-      msg = "🚫 You’ve played 10 times in the last 24 hours.\nLimit reached.";
+      msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
     } else if (reason.includes("insufficient")) {
-      msg = "💰 Not enough balance to start the game.";
+      msg = "💰 Insufficient balance to start the game.";
+
     }
 
     typeResult(msg);
-    updateStatus("Transaction failed");
+    updateStatus(msg);
     console.error("StartGame error:", err);
   }
 }
 
 async function makeChoice(choice) {
   if (!contract || !userAccount) {
-    updateStatus("Please connect wallet first");
+    updateStatus("Please connect your wallet first.");
     return;
   }
 
   if (!gameStarted) {
-    updateStatus("⚠️ You must start the game before choosing.");
+    updateStatus("⚠️ Start the game before choosing.");
     return;
   }
 
-  updateStatus("Submitting choice...");
+  updateStatus("Submitting your choice...");
   try {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
-
     const resolved = receipt.events.find(e => e.event === "GameResolved");
     const draw = receipt.events.find(e => e.event === "Draw");
 
@@ -430,40 +428,39 @@ async function makeChoice(choice) {
 
     if (resolved && resolved.args) {
       const { playerChoice, botChoice, result, payout } = resolved.args;
-
       const playerText = emojiMap[playerChoice] || "❓";
       const botText = emojiMap[botChoice] || "❓";
+      const payoutText = ethers.utils.formatEther(payout);
 
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
-        "🤝 Draw";
+        "🤝 It's a draw!";
 
-      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 ${resultMsg}\n💰 Payout: ${ethers.utils.formatEther(payout)} ZTC`;
+      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 ${resultMsg}\n💰 Payout: ${payoutText} ZTC`;
       gameStarted = false;
     }
 
     if (draw && draw.args) {
       const { playerChoice, botChoice, refund } = draw.args;
-
       const playerText = emojiMap[playerChoice] || "❓";
       const botText = emojiMap[botChoice] || "❓";
+      const refundText = ethers.utils.formatEther(refund);
 
-      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🤝 It's a draw!\n💸 Refund: ${ethers.utils.formatEther(refund)} ZTC`;
+      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🤝 It's a draw!\n💸 Refund: ${refundText} ZTC\nYou can start a new round.`;
       gameStarted = false;
     }
 
-    typeResult(summary || "✅ Choice submitted");
-    updateStatus("Game finished");
-
+    typeResult(summary || "✅ Move submitted.");
+    updateStatus("Round completed.");
     await showPlayerStats();
   } catch (err) {
-    let msg = "⚠️ Unexpected error";
     const reason = (err.reason || err.message || "").toLowerCase();
+    let msg = "⚠️ Something went wrong.";
 
-    if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
-    else if (reason.includes("already")) msg = "⏳ You are already in a game.";
-    else if (reason.includes("not started")) msg = "⚠️ Start the game before choosing.";
+    if (reason.includes("insufficient")) msg = "❌ Insufficient wallet balance.";
+    else if (reason.includes("already")) msg = "⏳ You're already in a game.";
+    else if (reason.includes("not started")) msg = "⚠️ You must start the game before making a move.";
 
     typeResult(msg);
     updateStatus(msg);
