@@ -1,6 +1,6 @@
 const contractAddress = "0x7Ca41FF431d6422B58Af9d15474484EDB7b50154";
 
-const ABI = [  
+const ABI = [
   {
     "inputs": [],
     "name": "startGame",
@@ -14,7 +14,7 @@ const ABI = [
     ],
     "name": "makeChoice",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -26,9 +26,7 @@ const ABI = [
       { "internalType": "uint256", "name": "wins", "type": "uint256" },
       { "internalType": "uint256", "name": "losses", "type": "uint256" },
       { "internalType": "uint256", "name": "draws", "type": "uint256" },
-      { "internalType": "uint256", "name": "totalGames", "type": "uint256" },
-      { "internalType": "uint256", "name": "lastPlayedDay", "type": "uint256" },
-      { "internalType": "uint256", "name": "playsToday", "type": "uint256" }
+      { "internalType": "uint256", "name": "totalGames", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -93,7 +91,7 @@ function toggleWallet() {
 
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("Please install MetaMask");
+    alert("🦊 Please install MetaMask to play ZenChain!");
     updateStatus("MetaMask not found");
     return;
   }
@@ -108,14 +106,14 @@ async function connectWallet() {
     const balance = await provider.getBalance(userAccount);
     const ztc = ethers.utils.formatEther(balance);
 
-    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount.slice(0, 6)}...${userAccount.slice(-4)} | ${ztc} ZTC`;
+    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
     document.getElementById("connectBtn").innerText = "🔌 Disconnect";
-    updateStatus("✅ Wallet connected");
+    updateStatus("✅ Wallet connected successfully");
 
     await showPlayerStats();
   } catch (err) {
     updateStatus("Connection failed");
-    console.error(err);
+    console.error("Connection Error:", err);
   }
 }
 
@@ -127,36 +125,41 @@ async function startGame() {
 
   const betRaw = document.getElementById("betInput").value;
   if (!betRaw || isNaN(betRaw)) {
-    updateStatus("Enter a valid bet amount.");
+    updateStatus("⚠️ Please enter a valid bet amount.");
     return;
   }
 
   const bet = parseFloat(betRaw);
   if (bet < 5 || bet > 100) {
-    updateStatus("Bet must be between 5 and 100 ZTC.");
+    updateStatus("⚠️ Bet must be between 5 and 100 ZTC.");
     return;
   }
 
-  const valueToSend = ethers.utils.parseEther(bet.toString());
+  const valueToSend = ethers.utils.parseUnits(bet.toString(), "ether");
+  console.log("🔍 Sending Bet:", bet, "ZTC →", valueToSend.toString(), "wei");
 
   updateStatus("Starting game...");
   try {
     const tx = await contract.startGame({ value: valueToSend });
     await tx.wait();
     gameStarted = true;
-    updateStatus("Game started! Choose your move.");
+    updateStatus("🎮 Game started! Choose your move.");
   } catch (err) {
     gameStarted = false;
-    let msg = "Failed to start game.";
+    let msg = "❌ Failed to start game.";
     const reason = (err.reason || err.message || "").toLowerCase();
 
-    if (reason.includes("already")) msg = "Already in a game. Choose your move.";
-    else if (reason.includes("exceeded")) msg = "Daily limit reached. Try again tomorrow.";
-    else if (reason.includes("insufficient")) msg = "Insufficient balance.";
+    if (reason.includes("already in game")) {
+      msg = "⏳ You already started a game.\nPlease choose your move.";
+    } else if (reason.includes("exceeded daily transaction limit")) {
+      msg = "🚫 You’ve played 10 times in the last 24 hours.\nCome back later.";
+    } else if (reason.includes("insufficient")) {
+      msg = "💰 Not enough balance to start the game.";
+    }
 
     typeResult(msg);
     updateStatus("Transaction failed");
-    console.error(err);
+    console.error("StartGame error:", err);
   }
 }
 
@@ -167,13 +170,13 @@ async function makeChoice(choice) {
   }
 
   if (!gameStarted) {
-    updateStatus("Start the game first.");
+    updateStatus("⚠️ You must start the game before choosing.");
     return;
   }
 
-  updateStatus("Sending choice...");
+  updateStatus("Submitting choice...");
   try {
-    const tx = await contract.makeChoice(choice, { value: 0 });
+    const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
     const event = receipt.events.find(e => e.event === "GameResolved");
@@ -181,32 +184,35 @@ async function makeChoice(choice) {
 
     if (event && event.args) {
       const { playerChoice, botChoice, result } = event.args;
-      const playerText = emojiMap[playerChoice] || "❓";
-      const botText = emojiMap[botChoice] || "❓";
+
+      const playerText = emojiMap[playerChoice] || "Unknown";
+      const botText = emojiMap[botChoice] || "Unknown";
+
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
         "🤝 It's a draw!";
 
-      typeResult(`🧑 ${playerText}\n🤖 ${botText}\n🎯 ${resultMsg}`);
+      const summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 Result: ${resultMsg}`;
+      typeResult(summary);
       updateStatus(resultMsg);
     } else {
-      typeResult("Game finished.");
-      updateStatus("Done");
+      typeResult("✅ Transaction confirmed.\nWaiting for bot's move...");
+      updateStatus("Awaiting result");
     }
 
     await showPlayerStats();
   } catch (err) {
-    let msg = "Error submitting choice.";
+    let msg = "⚠️ Unexpected error";
     const reason = (err.reason || err.message || "").toLowerCase();
 
-    if (reason.includes("not started")) msg = "Start game first.";
-    else if (reason.includes("already")) msg = "Already submitted choice.";
-    else if (reason.includes("insufficient")) msg = "Insufficient balance.";
+    if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
+    else if (reason.includes("already")) msg = "⏳ You are already in a game.";
+    else if (reason.includes("not started")) msg = "⚠️ Start the game before choosing.";
 
     typeResult(msg);
-    updateStatus("Transaction failed");
-    console.error(err);
+    updateStatus(msg);
+    console.error("Choice error:", err);
   }
 }
 
@@ -214,9 +220,15 @@ async function showPlayerStats() {
   try {
     const stats = await contract.playerStats(userAccount);
     const { wins, losses, draws } = stats;
-    document.getElementById("statsBox").innerText = `🏆 Wins: ${wins}\n💔 Losses: ${losses}\n🤝 Draws: ${draws}`;
+
+    const statsText = `
+🏆 Wins: ${wins}
+💔 Losses: ${losses}
+🤝 Draws: ${draws}
+    `;
+    document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
-    document.getElementById("statsBox").innerText = "Unable to load stats.";
+    document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
     console.error("Stats error:", err);
   }
 }
