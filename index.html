@@ -1,30 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ZenChain</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ZenChain | RPS Game</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 </head>
 <body class="dark-theme">
 
+  <button class="uniform-box" onclick="toggleTheme()">🌓</button>
+
   <header>
-    <div class="title-section">
-      <img class="logo-img" src="zenchain-logo.png" alt="ZenChain Logo" />
-      <h1>ZenChain</h1>
-      <h2>Play Rock-Paper-Scissors with Smart Contracts</h2>
-    </div>
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
   </header>
 
-  <button onclick="toggleTheme()" class="uniform-box">🌓 Toggle Theme</button>
+  <div class="title-section">
+    <h1>ZENCHAIN</h1>
+    <h2>Rock Paper Scissors Game</h2>
+  </div>
 
-  <div id="walletAddr">Wallet: Not connected</div>
-  <button id="connectBtn" class="uniform-box">🔌 Connect Wallet</button>
+  <button class="uniform-box" id="connectBtn">🔌 Connect Wallet</button>
+  <p id="walletAddr">Wallet: Not connected</p>
 
   <div class="bet-control-group">
-    <input id="betInput" class="uniform-box" type="number" placeholder="Bet (5–100 ZTC)" />
-    <button id="startBtn" class="uniform-box">🎮 Start Game</button>
+    <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)">
+    <button class="uniform-box" id="startBtn">🎮</button>
   </div>
 
   <div class="choices-container">
@@ -33,9 +35,10 @@
     <button class="choice-square" data-choice="3">✌️</button>
   </div>
 
-  <div id="resultBox">Result will appear here...</div>
-  <div id="statsBox">Stats will appear here...</div>
-  <div id="status">Status: Ready</div>
+  <div id="resultBox">Game results will appear here</div>
+  <button class="uniform-box" onclick="showPlayerStats()">📊</button>
+  <pre id="statsBox">Player stats will be shown here</pre>
+  <p id="status">Status: —</p>
 
   <script src="script.js"></script>
 </body>
