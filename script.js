@@ -40,16 +40,11 @@ const ABI = [
     ],
     "name": "GameResolved",
     "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [],
-    "name": "Draw",
-    "type": "event"
   }
 ];
 
 let provider, signer, contract, userAccount;
+let gameStarted = false;
 
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("connectBtn").onclick = toggleWallet;
@@ -108,11 +103,6 @@ async function connectWallet() {
 
   try {
     const accounts = await ethereum.request({ method: "eth_requestAccounts" });
-    if (!accounts || !accounts[0]) {
-      updateStatus("❌ No account found");
-      return;
-    }
-
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
     userAccount = await signer.getAddress();
@@ -127,8 +117,8 @@ async function connectWallet() {
 
     await showPlayerStats();
   } catch (err) {
-    console.error("Connection Error:", err);
     updateStatus("Connection failed: " + (err.message || ""));
+    console.error("Connection Error:", err);
   }
 }
 
@@ -156,9 +146,10 @@ async function startGame() {
   try {
     const tx = await contract.startGame({ value: valueToSend });
     await tx.wait();
+    gameStarted = true;
     updateStatus("🎮 Game started! Choose your move.");
   } catch (err) {
-    console.error("StartGame error:", err);
+    gameStarted = false;
     let msg = "❌ Failed to start game.";
     const reason = (err.reason || err.message || "").toLowerCase();
 
@@ -168,18 +159,22 @@ async function startGame() {
       msg = "🚫 You’ve played 10 times in the last 24 hours.\nCome back after 03:30 AM (Tehran time)!";
     } else if (reason.includes("insufficient")) {
       msg = "💰 Not enough balance to start the game.";
-    } else if (reason.includes("invalid")) {
-      msg = "⚠️ Invalid bet or contract condition.";
     }
 
     typeResult(msg);
     updateStatus("Transaction failed");
+    console.error("StartGame error:", err);
   }
 }
 
 async function makeChoice(choice) {
   if (!contract || !userAccount) {
     updateStatus("Please connect wallet first");
+    return;
+  }
+
+  if (!gameStarted) {
+    updateStatus("⚠️ You must start the game before choosing.");
     return;
   }
 
@@ -194,12 +189,15 @@ async function makeChoice(choice) {
     if (event && event.args) {
       const { playerChoice, botChoice, result } = event.args;
 
+      const playerText = emojiMap[playerChoice] || "Unknown";
+      const botText = emojiMap[botChoice] || "Unknown";
+
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
         "🤝 It's a draw!";
 
-      const summary = `🧑 You chose ${emojiMap[playerChoice]}\n🤖 Bot chose ${emojiMap[botChoice]}\n🎯 Result: ${resultMsg}`;
+      const summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 Result: ${resultMsg}`;
       typeResult(summary);
       updateStatus(resultMsg);
     } else {
@@ -209,7 +207,6 @@ async function makeChoice(choice) {
 
     await showPlayerStats();
   } catch (err) {
-    console.error("Choice error:", err);
     let msg = "⚠️ Unexpected error";
     const reason = (err.reason || err.message || "").toLowerCase();
 
@@ -219,6 +216,7 @@ async function makeChoice(choice) {
 
     typeResult(msg);
     updateStatus(msg);
+    console.error("Choice error:", err);
   }
 }
 
@@ -234,7 +232,7 @@ async function showPlayerStats() {
     `;
     document.getElementById("statsBox").innerText = statsText;
   } catch (err) {
-    console.error("Stats error:", err);
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
+    console.error("Stats error:", err);
   }
 }
