@@ -4,6 +4,7 @@ body {
   padding: 2rem;
   transition: background-color 0.3s ease, color 0.3s ease;
   position: relative;
+  margin: 0;
 }
 
 body.dark-theme {
@@ -14,6 +15,37 @@ body.dark-theme {
 body.light-theme {
   background-color: #f5f5f5;
   color: #111;
+}
+
+header {
+  position: relative;
+  height: 80px;
+  margin-bottom: 1rem;
+}
+
+.logo-img {
+  height: 60px;
+  position: absolute;
+  top: 10px;
+}
+
+.logo-img:first-of-type {
+  left: 20px;
+}
+
+.logo-img:last-of-type {
+  right: 20px;
+}
+
+.title-section h1 {
+  margin: 0;
+  font-size: 2.2rem;
+}
+
+.title-section h2 {
+  margin: 0.3rem 0 1.2rem;
+  font-size: 1.2rem;
+  font-weight: normal;
 }
 
 .uniform-box {
@@ -29,7 +61,7 @@ body.light-theme {
 }
 
 input[type="number"].uniform-box {
-  width: 200px;
+  width: 160px;
   background: #222;
   color: #fff;
   border: 1px solid #444;
@@ -41,6 +73,7 @@ input[type="number"].uniform-box {
   align-items: center;
   gap: 0.5rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .choices-container {
@@ -48,6 +81,7 @@ input[type="number"].uniform-box {
   justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .choice-square {
@@ -65,7 +99,9 @@ input[type="number"].uniform-box {
   transform: scale(1.2);
 }
 
-#resultBox, #statsBox, #status {
+#resultBox,
+#statsBox,
+#status {
   margin-top: 1rem;
   font-size: 1rem;
   font-weight: bold;
@@ -73,9 +109,10 @@ input[type="number"].uniform-box {
   border-radius: 10px;
   background-color: #222;
   color: #eee;
-  max-height: 160px;
+  max-height: 180px;
   overflow-y: auto;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 body.light-theme #resultBox,
@@ -85,16 +122,32 @@ body.light-theme #status {
   color: #111;
 }
 
-.logo-img {
-  height: 80px;
-  position: absolute;
-  top: 20px;
-}
+@media (max-width: 500px) {
+  .logo-img {
+    height: 45px;
+  }
 
-.logo-img:first-of-type {
-  left: 20px;
-}
+  .choice-square {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
 
-.logo-img:last-of-type {
-  right: 20px;
-}
+  input[type="number"].uniform-box {
+    width: 140px;
+    font-size: 0.9rem;
+  }
+
+  .uniform-box {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .title-section h1 {
+    font-size: 1.7rem;
+  }
+
+  .title-section h2 {
+    font-size: 1rem;
+  }
+  }
