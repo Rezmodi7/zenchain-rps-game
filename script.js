@@ -386,16 +386,23 @@ async function startGame() {
     updateStatus("Game started! Choose your move.");
   } catch (err) {
     gameStarted = false;
-    const reason = (err.reason || err.message || "").toLowerCase();
+
+    const rawError = (
+      err.reason ||
+      err.message ||
+      err.data?.message ||
+      err.error?.message ||
+      ""
+    ).toLowerCase();
+
     let msg = "❌ Failed to start game.";
 
-    if (reason.includes("already in game")) {
-      msg = "You are already in a game. Make your move.";
-    } else if (reason.includes("daily limit")) {
+    if (rawError.includes("daily limit") || rawError.includes("limit reached")) {
       msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
-    } else if (reason.includes("insufficient")) {
+    } else if (rawError.includes("already in game")) {
+      msg = "You are already in a game. Make your move.";
+    } else if (rawError.includes("insufficient")) {
       msg = "💰 Insufficient balance to start the game.";
-
     }
 
     typeResult(msg);
@@ -455,12 +462,20 @@ async function makeChoice(choice) {
     updateStatus("Round completed.");
     await showPlayerStats();
   } catch (err) {
-    const reason = (err.reason || err.message || "").toLowerCase();
+    const rawError = (
+      err.reason ||
+      err.message ||
+      err.data?.message ||
+      err.error?.message ||
+      ""
+    ).toLowerCase();
+
     let msg = "⚠️ Something went wrong.";
 
-    if (reason.includes("insufficient")) msg = "❌ Insufficient wallet balance.";
-    else if (reason.includes("already")) msg = "⏳ You're already in a game.";
-    else if (reason.includes("not started")) msg = "⚠️ You must start the game before making a move.";
+    if (rawError.includes("insufficient")) msg = "❌ Insufficient wallet balance.";
+    else if (rawError.includes("already")) msg = "⏳ You're already in a game.";
+    else if (rawError.includes("not started")) msg = "⚠️ You must start the game before making a move.";
+    else msg = "⚠️ Unexpected error. Please try again.";
 
     typeResult(msg);
     updateStatus(msg);
