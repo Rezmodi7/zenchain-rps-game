@@ -47,18 +47,13 @@ Click the **📊** button to view your game stats:
 
 ---
 
-## 🧪 Running This Project
-
-You can run the game locally:
-
-- Simply open `index.html` in your browser.
-- No server or build tools required.
-
 > ⚠️ **Do NOT use GitHub Pages from the root directory if you want to avoid rendering it as a static website.**
 
 To safely preview online, host it in a subfolder or use a local environment.
 
 ---
 
-This game was made with ❤️ using the ZenChain Testnet by Rezmodi7 
-Discord id: @Rezmodiii7
+This game was made with ❤️ using the 
+ZenChain Testnet by Rezmodi7 
+
+Discord id:**@Rezmodiii7**
