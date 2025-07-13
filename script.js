@@ -289,8 +289,7 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
-  const themeBtn = document.getElementById("themeBtn");
-  if (themeBtn) themeBtn.onclick = toggleTheme;
+  document.querySelector("button[onclick='toggleTheme()']").onclick = toggleTheme;
   document.body.classList.add("dark-theme");
   updateStatus("Ready");
 });
@@ -307,15 +306,29 @@ function typeResult(text) {
     if (i < text.length) {
       el.textContent += text[i];
       i++;
-      setTimeout(type, 30);
+      setTimeout(type, 25);
     }
   }
   type();
 }
 
+function toggleTheme() {
+  const body = document.body;
+  if (body.classList.contains("dark-theme")) {
+    body.classList.remove("dark-theme");
+    body.classList.add("light-theme");
+  } else {
+    body.classList.remove("light-theme");
+    body.classList.add("dark-theme");
+  }
+}
+
 function toggleWallet() {
   if (userAccount) {
-    provider = signer = contract = userAccount = null;
+    provider = null;
+    signer = null;
+    contract = null;
+    userAccount = null;
     document.getElementById("walletAddr").innerText = "Wallet: Not connected";
     document.getElementById("connectBtn").innerText = "🔌 Connect Wallet";
     updateStatus("Disconnected");
@@ -340,7 +353,6 @@ async function connectWallet() {
 
     const balance = await provider.getBalance(userAccount);
     const ztc = ethers.utils.formatEther(balance);
-
     document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
     document.getElementById("connectBtn").innerText = "🔌 Disconnect";
     updateStatus("✅ Wallet connected");
@@ -380,29 +392,33 @@ async function startGame() {
     updateStatus("Game started! Choose your move.");
   } catch (err) {
     gameStarted = false;
-    const rawError = (
-      err?.reason ||
-      err?.message ||
-      err?.data?.message ||
-      err?.error?.message ||
-      ""
-    ).toLowerCase();
+
+    let rawError = "";
+
+    if (err?.error?.message) {
+      rawError = err.error.message.toLowerCase();
+    } else if (err?.data?.message) {
+      rawError = err.data.message.toLowerCase();
+    } else if (err?.message) {
+      rawError = err.message.toLowerCase();
+    }
+
+    console.error("StartGame raw error:", rawError);
 
     let msg = "❌ Failed to start game.";
 
-    if (rawError.includes("daily limit")) {
-      msg = "🚫 You've reached the daily limit (10 plays). Try again tomorrow.";
+    if (rawError.includes("daily limit reached")) {
+      msg = "🚫 You've reached your daily play limit (10 games). Try again tomorrow.";
+    } else if (rawError.includes("already in game")) {
+      msg = "⏳ You're already in a game. Make your move.";
+    } else if (rawError.includes("insufficient")) {
+      msg = "💰 Wallet balance is insufficient.";
     } else if (rawError.includes("bet must be between")) {
       msg = "⚠️ Bet must be between 5 and 100 ZTC.";
-    } else if (rawError.includes("already in game")) {
-      msg = "⏳ You're already in a game. Please make your move.";
-    } else if (rawError.includes("insufficient balance")) {
-      msg = "💰 Insufficient wallet balance.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("StartGame Error:", msg);
   }
 }
 
@@ -465,19 +481,20 @@ async function makeChoice(choice) {
       ""
     ).toLowerCase();
 
+    console.error("Choice Error Raw:", rawError);
+
     let msg = "⚠️ Move submission failed.";
 
     if (rawError.includes("not in game")) {
-      msg = "⚠️ You're not in a game. Please start one first.";
+      msg = "⚠️ You are not in a game. Start one first.";
     } else if (rawError.includes("already chosen")) {
       msg = "⏳ You've already made your move.";
     } else if (rawError.includes("insufficient")) {
-      msg = "💰 Insufficient wallet balance.";
+      msg = "💰 Wallet balance is insufficient.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("Choice Error:", msg);
   }
 }
 
@@ -495,17 +512,5 @@ async function showPlayerStats() {
   } catch (err) {
     document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
     console.error("Stats error:", err);
-  }
-}
-
-// Theme toggler
-function toggleTheme() {
-  const body = document.body;
-  if (body.classList.contains("dark-theme")) {
-    body.classList.remove("dark-theme");
-    body.classList.add("light-theme");
-  } else {
-    body.classList.remove("light-theme");
-    body.classList.add("dark-theme");
   }
 }
