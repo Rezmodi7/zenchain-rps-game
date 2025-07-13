@@ -1,4 +1,4 @@
-const contractAddress = "0x7Ca41FF431d6422B58Af9d15474484EDB7b50154";
+const contractAddress = "0xE3C87205e8E1F748D08A14F5C662D436505BD3da";
 
 const ABI = [
 	{
@@ -26,6 +26,12 @@ const ABI = [
 				"internalType": "enum RockPaperScissors.Choice",
 				"name": "botChoice",
 				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "refund",
+				"type": "uint256"
 			}
 		],
 		"name": "Draw",
@@ -284,7 +290,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
-  document.querySelector("button[onclick='toggleTheme()']").onclick = toggleTheme;
 
   document.body.classList.add("dark-theme");
   updateStatus("Ready");
@@ -302,21 +307,15 @@ function typeResult(text) {
     if (i < text.length) {
       el.textContent += text[i];
       i++;
-      setTimeout(type, 20);
+      setTimeout(type, 30);
     }
   }
   type();
 }
 
 function toggleTheme() {
-  const body = document.body;
-  if (body.classList.contains("dark-theme")) {
-    body.classList.remove("dark-theme");
-    body.classList.add("light-theme");
-  } else {
-    body.classList.remove("light-theme");
-    body.classList.add("dark-theme");
-  }
+  document.body.classList.toggle("dark-theme");
+  document.body.classList.toggle("light-theme");
 }
 
 function toggleWallet() {
@@ -393,10 +392,9 @@ async function startGame() {
     const reason = (err.reason || err.message || "").toLowerCase();
 
     if (reason.includes("already in game")) {
-      msg = "⏳ You're already in a game. Please choose your move.";
-      gameStarted = true; // در این حالت کاربر هنوز انتخاب نکرده
-    } else if (reason.includes("exceeded daily")) {
-      msg = "🚫 You’ve reached the daily play limit.\nTry again later.";
+      msg = "⏳ You already started a game.\nPlease choose your move.";
+    } else if (reason.includes("daily limit")) {
+      msg = "🚫 You’ve played 10 times in the last 24 hours.\nLimit reached.";
     } else if (reason.includes("insufficient")) {
       msg = "💰 Not enough balance to start the game.";
     }
@@ -414,7 +412,7 @@ async function makeChoice(choice) {
   }
 
   if (!gameStarted) {
-    updateStatus("⚠️ Start a game first before choosing.");
+    updateStatus("⚠️ You must start the game before choosing.");
     return;
   }
 
@@ -423,40 +421,49 @@ async function makeChoice(choice) {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
 
-    const event = receipt.events.find(e => e.event === "GameResolved");
     const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
 
-    if (event && event.args) {
-      const { playerChoice, botChoice, result } = event.args;
+    const resolved = receipt.events.find(e => e.event === "GameResolved");
+    const draw = receipt.events.find(e => e.event === "Draw");
 
-      const playerText = emojiMap[playerChoice] || "Unknown";
-      const botText = emojiMap[botChoice] || "Unknown";
+    let summary = "";
+
+    if (resolved && resolved.args) {
+      const { playerChoice, botChoice, result, payout } = resolved.args;
+
+      const playerText = emojiMap[playerChoice] || "❓";
+      const botText = emojiMap[botChoice] || "❓";
 
       const resultMsg =
         result === "Win" ? "🎉 You win!" :
         result === "Lose" ? "😢 You lose!" :
-        "🤝 It's a draw!";
+        "🤝 Draw";
 
-      const summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 Result: ${resultMsg}`;
-      typeResult(summary);
-      updateStatus(resultMsg);
-    } else {
-      typeResult("✅ Transaction confirmed.\nWaiting for bot's move...");
-      updateStatus("Awaiting result");
+      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 ${resultMsg}\n💰 Payout: ${ethers.utils.formatEther(payout)} ZTC`;
+      gameStarted = false;
     }
 
-    await showPlayerStats();
+    if (draw && draw.args) {
+      const { playerChoice, botChoice, refund } = draw.args;
 
-    // ✅ Reset game flag after move
-    gameStarted = false;
+      const playerText = emojiMap[playerChoice] || "❓";
+      const botText = emojiMap[botChoice] || "❓";
+
+      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🤝 It's a draw!\n💸 Refund: ${ethers.utils.formatEther(refund)} ZTC`;
+      gameStarted = false;
+    }
+
+    typeResult(summary || "✅ Choice submitted");
+    updateStatus("Game finished");
+
+    await showPlayerStats();
   } catch (err) {
     let msg = "⚠️ Unexpected error";
     const reason = (err.reason || err.message || "").toLowerCase();
 
-    if (reason.includes("not started")) msg = "⚠️ You need to start a game first.";
-    else if (reason.includes("already")) msg = "⏳ You're already in a game.";
-    else if (reason.includes("insufficient")) msg = "❌ Insufficient funds.";
-    else if (reason.includes("revert")) msg = "❌ Reverted by smart contract.";
+    if (reason.includes("insufficient")) msg = "❌ Wallet balance is insufficient.";
+    else if (reason.includes("already")) msg = "⏳ You are already in a game.";
+    else if (reason.includes("not started")) msg = "⚠️ Start the game before choosing.";
 
     typeResult(msg);
     updateStatus(msg);
