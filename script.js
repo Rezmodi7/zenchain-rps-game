@@ -379,30 +379,35 @@ async function startGame() {
     await tx.wait();
     gameStarted = true;
     updateStatus("Game started! Choose your move.");
-  } catch (err) {
-    gameStarted = false;
+} catch (err) {
+  gameStarted = false;
 
-    const rawError = (
-      err?.reason ||
-      err?.message ||
-      err?.data?.message ||
-      err?.error?.message ||
-      ""
-    ).toLowerCase();
+  const rawError = (
+    err?.reason ||
+    err?.message ||
+    err?.data?.message ||
+    err?.error?.message ||
+    ""
+  ).toLowerCase();
 
-    console.error("Error details:", rawError);
+  console.error("Error details:", rawError);
 
-    let msg = "❌ Failed to start game.";
+  let msg = "⛔ Unable to start the game.\n\nPossible reasons:\n- Daily limit reached\n- Insufficient wallet balance\n- Already in a game\n\nPlease check and try again.";
 
-    if (rawError.includes('execution reverted: "daily limit reached"')) {
-      msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
-    } else if (rawError.includes("execution reverted: bet must be between")) {
-      msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
-    } else if (rawError.includes("execution reverted: already in game")) {
-      msg = "⏳ You're already in a game. Make your move.";
-    } else if (rawError.includes("execution reverted: insufficient balance")) {
-      msg = "💰 Wallet balance is insufficient.";
-    }
+  if (rawError.includes('execution reverted: "daily limit reached"')) {
+    msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
+  } else if (rawError.includes("execution reverted: bet must be between")) {
+    msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
+  } else if (rawError.includes("execution reverted: already in game")) {
+    msg = "⏳ You're already in a game. Make your move.";
+  } else if (rawError.includes("execution reverted: insufficient balance")) {
+    msg = "💰 Wallet balance is insufficient.";
+  }
+
+  typeResult(msg);
+  updateStatus(msg);
+  console.error("StartGame error message:", msg);
+  }
 
     typeResult(msg);
     updateStatus(msg);
