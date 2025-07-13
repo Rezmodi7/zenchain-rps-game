@@ -4,16 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ZenChain | RPS Game</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 </head>
 <body class="dark-theme">
 
+  <!-- دکمه تغییر تم -->
   <button class="uniform-box" onclick="toggleTheme()">🌓</button>
 
   <header>
-    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
-    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img"/>
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img" />
+    <img src="assets/zenchain-logo.png" alt="ZenChain Logo" class="logo-img" />
   </header>
 
   <div class="title-section">
@@ -21,25 +22,34 @@
     <h2>Rock Paper Scissors Game</h2>
   </div>
 
+  <!-- اتصال کیف پول -->
   <button class="uniform-box" id="connectBtn">🔌 Connect Wallet</button>
   <p id="walletAddr">Wallet: Not connected</p>
 
+  <!-- کنترل شرط بندی -->
   <div class="bet-control-group">
-    <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)">
-    <button class="uniform-box" id="startBtn">🎮</button>
+    <input type="number" id="betInput" class="uniform-box" min="5" max="100" placeholder="Bet (5–100 ZTC)" />
+    <button class="uniform-box" id="startBtn">🎮 Start</button>
   </div>
 
+  <!-- انتخاب گزینه -->
   <div class="choices-container">
     <button class="choice-square" data-choice="1">✊</button>
     <button class="choice-square" data-choice="2">✋</button>
     <button class="choice-square" data-choice="3">✌️</button>
   </div>
 
+  <!-- نمایش نتیجه -->
   <div id="resultBox">Game results will appear here</div>
-  <button class="uniform-box" onclick="showPlayerStats()">📊</button>
+
+  <!-- نمایش آمار -->
+  <button class="uniform-box" onclick="showPlayerStats()">📊 Show Stats</button>
   <pre id="statsBox">Player stats will be shown here</pre>
+
+  <!-- وضعیت -->
   <p id="status">Status: —</p>
 
+  <!-- اسکریپت -->
   <script src="script.js"></script>
 </body>
 </html>
