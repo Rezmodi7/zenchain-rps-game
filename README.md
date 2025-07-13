@@ -1,4 +1,4 @@
-# ✊ ZENCHAIN - Rock Paper Scissors Game ✋
+#✊ZENCHAIN - Rock Paper Scissors Game✋
 
 Welcome to the classic **Rock Paper Scissors** game — powered by **ZenChain Testnet**.
 
