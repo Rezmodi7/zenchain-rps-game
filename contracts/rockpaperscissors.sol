@@ -29,7 +29,7 @@ contract RockPaperScissors {
     event GameStarted(address indexed player, uint256 betAmount);
     event PlayerChose(address indexed player, Choice choice);
     event GameResolved(address indexed player, Choice playerChoice, Choice botChoice, string result, uint256 payout);
-    event Draw(address indexed player, Choice playerChoice, Choice botChoice);
+    event Draw(address indexed player, Choice playerChoice, Choice botChoice, uint256 refund);
 
     constructor() {
         owner = msg.sender;
@@ -53,11 +53,14 @@ contract RockPaperScissors {
     function startGame() public payable onlyNotInGame {
         require(msg.value >= minBet && msg.value <= maxBet, "Bet must be between min and max");
 
-        uint256 today = block.timestamp / 1 days;
-        if (playerStats[msg.sender].lastPlayedDay < today) {
-            playerStats[msg.sender].lastPlayedDay = today;
+        uint256 offset = 3 hours + 30 minutes;
+        uint256 todayTehran = (block.timestamp + offset) / 1 days;
+
+        if (playerStats[msg.sender].lastPlayedDay < todayTehran) {
+            playerStats[msg.sender].lastPlayedDay = todayTehran;
             playerStats[msg.sender].playsToday = 0;
         }
+
         require(playerStats[msg.sender].playsToday < 10, "Daily limit reached");
 
         playerGames[msg.sender] = GameState({
@@ -85,23 +88,35 @@ contract RockPaperScissors {
             keccak256(abi.encodePacked(block.timestamp, block.prevrandao, _player, block.number))
         ) % 3;
 
-        Choice botChoice = Choice(random + 1); // Rock(1), Paper(2), Scissors(3)
+        Choice botChoice = Choice(random + 1);
         Choice playerChoice = playerGames[_player].playerChoice;
         uint256 bet = playerGames[_player].betAmount;
 
         string memory result;
         uint256 payout = 0;
 
-        if (playerChoice == botChoice) {
-            playerGames[_player].playerChoice = Choice.None;
-            result = "Draw";
-            playerStats[_player].draws++;
-            emit Draw(_player, playerChoice, botChoice);
-            return;
-        }
+        uint256 offset = 3 hours + 30 minutes;
+        uint256 todayTehran = (block.timestamp + offset) / 1 days;
 
         playerStats[_player].totalGames++;
         playerStats[_player].playsToday++;
+        playerStats[_player].lastPlayedDay = todayTehran;
+
+        if (playerChoice == botChoice) {
+            result = "Draw";
+            playerStats[_player].draws++;
+
+            // Refund bet and reset state
+            (bool refunded, ) = payable(_player).call{value: bet}("");
+            require(refunded, "Refund failed");
+
+            playerGames[_player].inGame = false;
+            playerGames[_player].playerChoice = Choice.None;
+            playerGames[_player].betAmount = 0;
+
+            emit Draw(_player, playerChoice, botChoice, bet);
+            return;
+        }
 
         bool win = (
             (playerChoice == Choice.Rock && botChoice == Choice.Scissors) ||
@@ -113,6 +128,7 @@ contract RockPaperScissors {
             result = "Win";
             payout = bet * 2;
             playerStats[_player].wins++;
+
             (bool success, ) = payable(_player).call{value: payout}("");
             require(success, "Failed to send winnings");
         } else {
@@ -129,7 +145,6 @@ contract RockPaperScissors {
     }
 
     function fundContract() public payable {}
-
     function getContractBalance() public view returns (uint256) {
         return address(this).balance;
     }
