@@ -386,4 +386,4 @@ async function startGame() {
     updateStatus(msg);
     console.error("StartGame error message:", msg);
   }
-}
+				}
