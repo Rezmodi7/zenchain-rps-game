@@ -289,7 +289,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".choice-square").forEach(btn => {
     btn.onclick = () => makeChoice(+btn.dataset.choice);
   });
-  document.body.classList.add("dark-theme");
   updateStatus("Ready");
 });
 
@@ -311,23 +310,9 @@ function typeResult(text) {
   type();
 }
 
-function toggleWallet() {
-  if (userAccount) {
-    provider = null;
-    signer = null;
-    contract = null;
-    userAccount = null;
-    document.getElementById("walletAddr").innerText = "Wallet: Not connected";
-    document.getElementById("connectBtn").innerText = "🔌 Connect Wallet";
-    updateStatus("Disconnected");
-  } else {
-    connectWallet();
-  }
-}
-
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("🦊 Please install MetaMask to play ZenChain!");
+    alert("🦊 Please install MetaMask");
     updateStatus("MetaMask not found");
     return;
   }
@@ -338,36 +323,29 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAccount = await signer.getAddress();
     contract = new ethers.Contract(contractAddress, ABI, signer);
-
-    const balance = await provider.getBalance(userAccount);
-    const ztc = ethers.utils.formatEther(balance);
-
-    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
-    document.getElementById("connectBtn").innerText = "🔌 Disconnect";
+    document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}`;
     updateStatus("✅ Wallet connected");
-
-    await showPlayerStats();
   } catch (err) {
     updateStatus("Connection failed.");
-    console.error("Wallet Connection Error:", err);
+    console.error("Wallet error:", err);
   }
 }
 
 async function startGame() {
   if (!contract || !userAccount) {
-    updateStatus("Please connect your wallet first.");
+    updateStatus("Please connect your wallet.");
     return;
   }
 
   const betRaw = document.getElementById("betInput").value;
   if (!betRaw || isNaN(betRaw)) {
-    updateStatus("⚠️ Enter a valid bet amount.");
+    updateStatus("Enter a valid bet amount.");
     return;
   }
 
   const bet = parseFloat(betRaw);
   if (bet < 5 || bet > 100) {
-    updateStatus("⚠️ Bet must be between 5 and 100 ZTC.");
+    updateStatus("Bet must be between 5 and 100 ZTC.");
     return;
   }
 
@@ -379,93 +357,9 @@ async function startGame() {
     await tx.wait();
     gameStarted = true;
     updateStatus("Game started! Choose your move.");
-} catch (err) {
-  gameStarted = false;
-
-  const rawError = (
-    err?.reason ||
-    err?.message ||
-    err?.data?.message ||
-    err?.error?.message ||
-    ""
-  ).toLowerCase();
-
-  console.error("Error details:", rawError);
-
-  let msg = "⛔ Unable to start the game.\n\nPossible reasons:\n- Daily limit reached\n- Insufficient wallet balance\n- Already in a game\n\nPlease check and try again.";
-
-  if (rawError.includes('execution reverted: "daily limit reached"')) {
-    msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
-  } else if (rawError.includes("execution reverted: bet must be between")) {
-    msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
-  } else if (rawError.includes("execution reverted: already in game")) {
-    msg = "⏳ You're already in a game. Make your move.";
-  } else if (rawError.includes("execution reverted: insufficient balance")) {
-    msg = "💰 Wallet balance is insufficient.";
-  }
-
-  typeResult(msg);
-  updateStatus(msg);
-  console.error("StartGame error message:", msg);
-  }
-
-    typeResult(msg);
-    updateStatus(msg);
-    console.error("StartGame error message:", msg);
-  }
-}
-
-async function makeChoice(choice) {
-  if (!contract || !userAccount) {
-    updateStatus("Please connect your wallet first.");
-    return;
-  }
-
-  if (!gameStarted) {
-    updateStatus("⚠️ Start the game before choosing.");
-    return;
-  }
-
-  updateStatus("Submitting choice...");
-  try {
-    const tx = await contract.makeChoice(choice);
-    const receipt = await tx.wait();
-
-    const emojiMap = { 1: "✊ Rock", 2: "✋ Paper", 3: "✌️ Scissors" };
-    const resolved = receipt.events.find(e => e.event === "GameResolved");
-    const draw = receipt.events.find(e => e.event === "Draw");
-
-    let summary = "";
-
-    if (resolved && resolved.args) {
-      const { playerChoice, botChoice, result, payout } = resolved.args;
-      const playerText = emojiMap[playerChoice] || "❓";
-      const botText = emojiMap[botChoice] || "❓";
-      const payoutText = ethers.utils.formatEther(payout);
-
-      const resultMsg =
-        result === "Win" ? "🎉 You win!" :
-        result === "Lose" ? "😢 You lose!" :
-        "🤝 It's a draw!";
-
-      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🎯 ${resultMsg}\n💰 Payout: ${payoutText} ZTC`;
-      gameStarted = false;
-    }
-
-    if (draw && draw.args) {
-      const { playerChoice, botChoice, refund } = draw.args;
-      const playerText = emojiMap[playerChoice] || "❓";
-      const botText = emojiMap[botChoice] || "❓";
-      const refundText = ethers.utils.formatEther(refund);
-
-      summary = `🧑 You chose ${playerText}\n🤖 Bot chose ${botText}\n🤝 It's a draw!\n💸 Refund: ${refundText} ZTC\nYou can start a new round.`;
-      gameStarted = false;
-    }
-
-    typeResult(summary || "✅ Choice submitted.");
-    updateStatus("Round completed.");
-    await showPlayerStats();
   } catch (err) {
+    gameStarted = false;
+
     const rawError = (
       err?.reason ||
       err?.message ||
@@ -474,37 +368,22 @@ async function makeChoice(choice) {
       ""
     ).toLowerCase();
 
-    console.error("Choice Error Raw:", rawError);
+    console.error("Error details:", rawError);
 
-    let msg = "⚠️ Move submission failed.";
+    let msg = "⛔ Unable to start the game.\n\nPossible reasons:\n- Daily limit reached\n- Insufficient wallet balance\n- Already in a game\n\nPlease check and try again.";
 
-    if (rawError.includes("execution reverted: not in game")) {
-      msg = "⚠️ You are not in a game. Start one first.";
-    } else if (rawError.includes("execution reverted: already chosen")) {
-      msg = "⏳ You've already made your move.";
-    } else if (rawError.includes("insufficient")) {
+    if (rawError.includes('execution reverted: "daily limit reached"')) {
+      msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
+    } else if (rawError.includes("execution reverted: bet must be between")) {
+      msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
+    } else if (rawError.includes("execution reverted: already in game")) {
+      msg = "⏳ You're already in a game. Make your move.";
+    } else if (rawError.includes("execution reverted: insufficient balance")) {
       msg = "💰 Wallet balance is insufficient.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("Choice error message:", msg);
-  }
-}
-
-async function showPlayerStats() {
-  try {
-    const stats = await contract.playerStats(userAccount);
-    const { wins, losses, draws } = stats;
-
-    const statsText = `
-🏆 Wins: ${wins}
-💔 Losses: ${losses}
-🤝 Draws: ${draws}
-    `;
-    document.getElementById("statsBox").innerText = statsText;
-  } catch (err) {
-    document.getElementById("statsBox").innerText = "📉 Unable to load stats.";
-    console.error("Stats error:", err);
+    console.error("StartGame error message:", msg);
   }
 }
