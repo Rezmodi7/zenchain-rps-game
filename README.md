@@ -1,7 +1,7 @@
 # ZENCHAIN 
 # ✊Rock Paper Scissors Game✋
 
-Welcome to the classic **Rock Paper Scissors** game — powered by **REZA**
+Welcome to the classic **Rock Paper Scissors** game
 
 ## 🚀 How to Play
 
