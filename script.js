@@ -311,11 +311,6 @@ function typeResult(text) {
   type();
 }
 
-function toggleTheme() {
-  document.body.classList.toggle("dark-theme");
-  document.body.classList.toggle("light-theme");
-}
-
 function toggleWallet() {
   if (userAccount) {
     provider = null;
@@ -349,12 +344,12 @@ async function connectWallet() {
 
     document.getElementById("walletAddr").innerText = `Wallet: ${userAccount}\nBalance: ${ztc} ZTC`;
     document.getElementById("connectBtn").innerText = "🔌 Disconnect";
-    updateStatus("✅ Wallet connected successfully");
+    updateStatus("✅ Wallet connected");
 
     await showPlayerStats();
   } catch (err) {
-    updateStatus("Connection failed: " + (err.message || ""));
-    console.error("Connection Error:", err);
+    updateStatus("Connection failed.");
+    console.error("Wallet Connection Error:", err);
   }
 }
 
@@ -388,26 +383,30 @@ async function startGame() {
     gameStarted = false;
 
     const rawError = (
-      err.reason ||
-      err.message ||
-      err.data?.message ||
-      err.error?.message ||
+      err?.reason ||
+      err?.message ||
+      err?.data?.message ||
+      err?.error?.message ||
       ""
     ).toLowerCase();
 
+    console.error("Error details:", rawError);
+
     let msg = "❌ Failed to start game.";
 
-    if (rawError.includes("daily limit") || rawError.includes("limit reached")) {
+    if (rawError.includes('execution reverted: "daily limit reached"')) {
       msg = "🚫 You've reached the daily limit (10 plays). Try again after 3:30 AM Tehran time.";
-    } else if (rawError.includes("already in game")) {
-      msg = "You are already in a game. Make your move.";
-    } else if (rawError.includes("insufficient")) {
-      msg = "💰 Insufficient balance to start the game.";
+    } else if (rawError.includes("execution reverted: bet must be between")) {
+      msg = "⚠️ Bet amount must be between 5 and 100 ZTC.";
+    } else if (rawError.includes("execution reverted: already in game")) {
+      msg = "⏳ You're already in a game. Make your move.";
+    } else if (rawError.includes("execution reverted: insufficient balance")) {
+      msg = "💰 Wallet balance is insufficient.";
     }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("StartGame error:", err);
+    console.error("StartGame error message:", msg);
   }
 }
 
@@ -422,7 +421,7 @@ async function makeChoice(choice) {
     return;
   }
 
-  updateStatus("Submitting your choice...");
+  updateStatus("Submitting choice...");
   try {
     const tx = await contract.makeChoice(choice);
     const receipt = await tx.wait();
@@ -458,28 +457,33 @@ async function makeChoice(choice) {
       gameStarted = false;
     }
 
-    typeResult(summary || "✅ Move submitted.");
+    typeResult(summary || "✅ Choice submitted.");
     updateStatus("Round completed.");
     await showPlayerStats();
   } catch (err) {
     const rawError = (
-      err.reason ||
-      err.message ||
-      err.data?.message ||
-      err.error?.message ||
+      err?.reason ||
+      err?.message ||
+      err?.data?.message ||
+      err?.error?.message ||
       ""
     ).toLowerCase();
 
-    let msg = "⚠️ Something went wrong.";
+    console.error("Choice Error Raw:", rawError);
 
-    if (rawError.includes("insufficient")) msg = "❌ Insufficient wallet balance.";
-    else if (rawError.includes("already")) msg = "⏳ You're already in a game.";
-    else if (rawError.includes("not started")) msg = "⚠️ You must start the game before making a move.";
-    else msg = "⚠️ Unexpected error. Please try again.";
+    let msg = "⚠️ Move submission failed.";
+
+    if (rawError.includes("execution reverted: not in game")) {
+      msg = "⚠️ You are not in a game. Start one first.";
+    } else if (rawError.includes("execution reverted: already chosen")) {
+      msg = "⏳ You've already made your move.";
+    } else if (rawError.includes("insufficient")) {
+      msg = "💰 Wallet balance is insufficient.";
+    }
 
     typeResult(msg);
     updateStatus(msg);
-    console.error("Choice error:", err);
+    console.error("Choice error message:", msg);
   }
 }
 
